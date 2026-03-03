@@ -1,0 +1,492 @@
+---
+title: 'Validation'
+description: 'Understanding request validation using class-validator and class-transformer'
+icon: 'shield-check'
+---
+
+## Overview
+
+The API uses **class-validator** and **class-transformer** to automatically validate incoming requests through DTOs (Data Transfer Objects). Validation is configured globally in `main.ts`.
+
+## Global Validation Configuration
+
+Validation is enabled application-wide with these settings:
+
+<CodeGroup>
+```typescript main.ts
+import { ValidationPipe } from '@nestjs/common';
+
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,              // Removes unknown properties
+    forbidNonWhitelisted: true,   // Throws error for unknown properties
+    transform: true,              // Auto-converts types (crucial for nested DTOs)
+  }),
+);
+```
+</CodeGroup>
+
+<Info>
+  The `transform: true` option is **critical** for nested DTOs and type conversions. It automatically converts plain JSON objects to DTO class instances.
+</Info>
+
+### Configuration Options Explained
+
+<AccordionGroup>
+  <Accordion title="whitelist: true">
+    Automatically strips properties that don't have validation decorators.
+    
+    **Example:**
+    ```json
+    // Request body
+    {
+      "nombre": "Test",
+      "hackerField": "malicious" // This will be removed
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="forbidNonWhitelisted: true">
+    Instead of silently removing unknown properties, it throws a 400 Bad Request error.
+    
+    **Response:**
+    ```json
+    {
+      "statusCode": 400,
+      "message": ["property hackerField should not exist"],
+      "error": "Bad Request"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="transform: true">
+    Converts incoming data to the expected types and DTO instances.
+    
+    **Transformations:**
+    - `"123"` → `123` (string to number)
+    - `"true"` → `true` (string to boolean)
+    - Plain objects → DTO class instances
+  </Accordion>
+</AccordionGroup>
+
+## Common Validation Decorators
+
+### String Validation
+
+<CodeGroup>
+```typescript Basic String
+@IsString()
+@IsNotEmpty()
+@MaxLength(255)
+nombre: string;
+```
+
+```typescript Email
+@IsString()
+@IsEmail()
+email: string;
+```
+
+```typescript With Transform
+import { Transform } from 'class-transformer';
+
+@IsString()
+@IsNotEmpty()
+@Transform(({ value }) => value?.trim())
+nombre: string; // Auto-trims whitespace
+```
+</CodeGroup>
+
+### Number Validation
+
+<CodeGroup>
+```typescript Integer
+@IsNumber()
+@IsNotEmpty()
+municipioId: number;
+```
+
+```typescript Decimal
+@IsNumber({ maxDecimalPlaces: 2 })
+@IsPositive()
+@Min(0)
+monto: number; // Budget amount
+```
+
+```typescript Range
+@IsNumber()
+@Min(-90)
+@Max(90)
+latitud: number;
+
+@IsNumber()
+@Min(-180)
+@Max(180)
+longitud: number;
+```
+</CodeGroup>
+
+### Optional Fields
+
+<CodeGroup>
+```typescript Optional String
+@IsString()
+@IsOptional()
+descripcion?: string;
+```
+
+```typescript Optional with Default
+@IsNumber()
+@IsOptional()
+orden?: number; // Will be undefined if not provided
+```
+</CodeGroup>
+
+### Enum Validation
+
+<CodeGroup>
+```typescript Enum
+export enum TipoGeometria {
+  PUNTO = 'PUNTO',
+  RUTA = 'RUTA',
+  POLIGONO = 'POLIGONO',
+}
+
+@IsEnum(TipoGeometria)
+@IsOptional()
+tipoGeometria?: TipoGeometria;
+```
+
+```typescript String Enum
+@IsString()
+@IsIn(['admin', 'user'])
+roles?: string;
+```
+</CodeGroup>
+
+### Boolean Validation
+
+<CodeGroup>
+```typescript Boolean
+@IsBoolean()
+@IsOptional()
+activo?: boolean;
+```
+</CodeGroup>
+
+## Nested DTO Validation
+
+For complex objects with nested DTOs, use `@ValidateNested()` with `@Type()`:
+
+<CodeGroup>
+```typescript create-obra.dto.ts
+import { Type } from 'class-transformer';
+import { IsArray, ValidateNested, IsOptional } from 'class-validator';
+import { CreateObraUbicacionDto } from './create-obra-ubicacion.dto';
+
+export class CreateObraDto {
+  @IsString()
+  @IsNotEmpty()
+  nombre: string;
+
+  // Nested array of location DTOs
+  @IsArray()
+  @ValidateNested({ each: true }) // Validates each item in array
+  @Type(() => CreateObraUbicacionDto) // Transforms to DTO instances
+  @IsOptional()
+  ubicaciones?: CreateObraUbicacionDto[];
+}
+```
+
+```typescript create-obra-ubicacion.dto.ts
+export class CreateObraUbicacionDto {
+  @IsNumber()
+  @IsNotEmpty()
+  municipioId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  direccion: string;
+
+  @IsString()
+  @IsOptional()
+  localidadReferencia?: string;
+}
+```
+</CodeGroup>
+
+<Warning>
+  Without `@Type()` decorator, nested DTOs won't be validated. The `transform: true` option in `ValidationPipe` requires this decorator to work with nested objects.
+</Warning>
+
+## Real-World DTO Examples
+
+### CreateUserDto
+
+<CodeGroup>
+```typescript create-user.dto.ts
+import { IsEmail, IsString, MinLength, IsOptional, IsIn, IsBoolean } from 'class-validator';
+
+export class CreateUserDto {
+  @IsString()
+  @MinLength(3)
+  nombreCompleto: string;
+
+  @IsString()
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+  password: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['admin', 'user'])
+  roles?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+```
+</CodeGroup>
+
+**Location:** `/home/daytona/workspace/source/src/users/dto/create-user.dto.ts:1`
+
+### CreateMunicipioDto
+
+<CodeGroup>
+```typescript create-municipio.dto.ts
+import { IsString, IsNotEmpty, IsNumber, Min, Max, IsOptional, IsBoolean } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+export class CreateMunicipioDto {
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value?.trim())
+  nombre: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(-90)
+  @Max(90)
+  latitud: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(-180)
+  @Max(180)
+  longitud: number;
+
+  @IsBoolean()
+  @IsOptional()
+  activo?: boolean;
+}
+```
+</CodeGroup>
+
+**Location:** `/home/daytona/workspace/source/src/municipios/dto/create-municipio.dto.ts:1`
+
+### CreateObraDto (Complex)
+
+<CodeGroup>
+```typescript create-obra.dto.ts
+import { IsString, IsNotEmpty, IsArray, ValidateNested, IsNumber, IsOptional, IsPositive, Min, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateObraUbicacionDto } from './create-obra-ubicacion.dto';
+
+export class CreateObraDto {
+  // Fiscal year
+  @IsNumber()
+  @IsNotEmpty()
+  ejercicioFiscalId: number;
+
+  // Unique key
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  claveUnica: string;
+
+  // Name
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  nombre: string;
+
+  // Description
+  @IsString()
+  @IsOptional()
+  descripcion?: string;
+
+  // Department
+  @IsNumber()
+  @IsNotEmpty()
+  dependenciaId: number;
+
+  // Budget
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Min(0)
+  monto: number;
+
+  // Municipality
+  @IsNumber()
+  @IsNotEmpty()
+  municipioId: number;
+
+  // Project type (optional)
+  @IsNumber()
+  @IsOptional()
+  tipoProyectoId?: number;
+
+  // Status
+  @IsNumber()
+  @IsNotEmpty()
+  estatusObraId: number;
+
+  // Nested locations array
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateObraUbicacionDto)
+  @IsOptional()
+  ubicaciones?: CreateObraUbicacionDto[];
+}
+```
+</CodeGroup>
+
+**Location:** `/home/daytona/workspace/source/src/obras/dto/create-obra.dto.ts:1`
+
+## Validation Error Responses
+
+When validation fails, NestJS returns a standardized error response:
+
+<CodeGroup>
+```json Single Error
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email"
+  ],
+  "error": "Bad Request"
+}
+```
+
+```json Multiple Errors
+{
+  "statusCode": 400,
+  "message": [
+    "nombre should not be empty",
+    "email must be an email",
+    "password must be longer than or equal to 6 characters"
+  ],
+  "error": "Bad Request"
+}
+```
+
+```json Nested Validation Error
+{
+  "statusCode": 400,
+  "message": [
+    "ubicaciones.0.municipioId must be a number",
+    "ubicaciones.0.direccion should not be empty"
+  ],
+  "error": "Bad Request"
+}
+```
+</CodeGroup>
+
+## Custom Validation Messages
+
+You can customize error messages using the decorator options:
+
+<CodeGroup>
+```typescript Custom Message
+@MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+password: string;
+```
+
+```typescript Multiple Constraints
+@IsNumber({}, { message: 'El monto debe ser un número' })
+@Min(0, { message: 'El monto no puede ser negativo' })
+@IsPositive({ message: 'El monto debe ser mayor a 0' })
+monto: number;
+```
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Use DTOs" icon="file-code">
+    Never accept raw request bodies. Create a DTO for every endpoint that accepts data.
+  </Card>
+  <Card title="Be Explicit" icon="pen">
+    Use `@IsNotEmpty()` for required fields and `@IsOptional()` for optional ones.
+  </Card>
+  <Card title="Type Safety" icon="shield">
+    Combine validation with TypeScript types for compile-time and runtime safety.
+  </Card>
+  <Card title="Nested Validation" icon="layer-group">
+    Don't forget `@Type()` and `@ValidateNested()` for nested objects and arrays.
+  </Card>
+</CardGroup>
+
+<Note>
+  The `transform: true` configuration (set in `main.ts:13`) is essential for:
+  - Auto-converting query parameters from strings
+  - Transforming nested DTOs
+  - Type coercion (string to number, etc.)
+</Note>
+
+## Common Validation Patterns
+
+### Password Validation
+
+```typescript
+@IsString()
+@MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+password: string;
+```
+
+### Geographic Coordinates
+
+```typescript
+@IsNumber()
+@Min(-90)
+@Max(90)
+latitud: number;
+
+@IsNumber()
+@Min(-180)
+@Max(180)
+longitud: number;
+```
+
+### Money/Currency
+
+```typescript
+@IsNumber({ maxDecimalPlaces: 2 })
+@IsPositive()
+@Min(0)
+monto: number;
+```
+
+### Trimmed Strings
+
+```typescript
+@IsString()
+@IsNotEmpty()
+@Transform(({ value }) => value?.trim())
+nombre: string;
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="database" href="/concepts/database-schema">
+    Learn about entity relationships
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/concepts/error-handling">
+    Understand error responses
+  </Card>
+</CardGroup>

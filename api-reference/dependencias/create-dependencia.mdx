@@ -1,0 +1,113 @@
+---
+title: 'Create Dependency'
+description: 'Create a new government dependency'
+---
+
+## POST /dependencias
+
+Creates a new government dependency in the system.
+
+### Authentication
+
+No authentication required in the current implementation.
+
+<Warning>
+  This endpoint should be protected with authentication and admin authorization in production environments.
+</Warning>
+
+### Request Body
+
+<ParamField body="nombre" type="string" required>
+  Full name of the dependency. This field is required and cannot be empty. Leading and trailing whitespace will be automatically trimmed.
+  
+  **Example:** `"Secretaría de Desarrollo Urbano"`
+</ParamField>
+
+<ParamField body="siglas" type="string">
+  Acronym or abbreviation for the dependency. This field is optional. If provided, it will be automatically converted to uppercase and whitespace will be trimmed.
+  
+  **Example:** `"SDU"` or `"sdu"` (both become `"SDU"`)
+</ParamField>
+
+<ParamField body="activo" type="boolean" default={true}>
+  Indicates whether the dependency is active. Optional field that defaults to `true` if not provided.
+  
+  **Example:** `true`
+</ParamField>
+
+### Response
+
+Returns the newly created dependency object with its assigned ID.
+
+<ResponseField name="id" type="number" required>
+  Auto-generated unique identifier for the dependency
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Full name of the dependency
+</ResponseField>
+
+<ResponseField name="siglas" type="string">
+  Acronym or abbreviation for the dependency (uppercase)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Indicates whether the dependency is active
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash Complete
+curl -X POST http://localhost:3000/dependencias \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Secretaría de Desarrollo Urbano",
+    "siglas": "SDU",
+    "activo": true
+  }'
+```
+
+```bash Minimal (Required Fields Only)
+curl -X POST http://localhost:3000/dependencias \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Secretaría de Obras Públicas"
+  }'
+```
+</CodeGroup>
+
+### Example Responses
+
+```json 201 - Created
+{
+  "id": 5,
+  "nombre": "Secretaría de Desarrollo Urbano",
+  "siglas": "SDU",
+  "activo": true
+}
+```
+
+```json 400 - Bad Request (Missing Required Field)
+{
+  "statusCode": 400,
+  "message": [
+    "El nombre es obligatorio"
+  ],
+  "error": "Bad Request"
+}
+```
+
+```json 400 - Bad Request (Invalid Field Type)
+{
+  "statusCode": 400,
+  "message": [
+    "activo must be a boolean value"
+  ],
+  "error": "Bad Request"
+}
+```
+
+<Note>
+  The `nombre` field must be unique. If you try to create a dependency with a name that already exists, you'll receive a database constraint error.
+</Note>

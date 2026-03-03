@@ -1,0 +1,121 @@
+---
+title: Introduction
+description: Welcome to the Yucatan Public Works API - A comprehensive REST API for managing public infrastructure projects across Yucatan, Mexico
+---
+
+## Welcome to Yucatan Public Works API
+
+The Yucatan Public Works API is a robust REST API built with NestJS that provides comprehensive management of public infrastructure projects, municipalities, government dependencies, and related catalogs across Yucatan, Mexico.
+
+This API serves as the backend for tracking and managing "obras" (public works) throughout their lifecycle, from planning to completion.
+
+<CardGroup cols={3}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running in minutes with our quick start guide
+  </Card>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Detailed installation and configuration instructions
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/auth/login"
+  >
+    Explore all available endpoints and their usage
+  </Card>
+</CardGroup>
+
+## Key Features
+
+The Yucatan Public Works API provides powerful features for managing public infrastructure:
+
+<CardGroup cols={2}>
+  <Card title="JWT Authentication" icon="shield-halved">
+    Secure authentication with role-based access control (Admin and User roles)
+  </Card>
+  <Card title="Public Works Management" icon="building">
+    Complete CRUD operations for managing obras with automatic numbering by fiscal year
+  </Card>
+  <Card title="Geographic Support" icon="map-location-dot">
+    PostGIS integration for storing and querying geographic location data
+  </Card>
+  <Card title="User Favorites" icon="star">
+    Allow users to bookmark and track their favorite public works projects
+  </Card>
+  <Card title="Advanced Filtering" icon="filter">
+    Comprehensive filtering and pagination for all resources
+  </Card>
+  <Card title="TypeORM Integration" icon="database">
+    Type-safe database operations with PostgreSQL and TypeORM entities
+  </Card>
+</CardGroup>
+
+## What the API Manages
+
+The API provides endpoints for managing several core entities:
+
+### Obras (Public Works)
+The central resource of the API. Each obra represents a public infrastructure project with:
+- Unique identifier and fiscal year tracking
+- Project details (name, description, budget)
+- Geographic location with PostGIS support
+- Status tracking through the project lifecycle
+- Association with municipalities and government dependencies
+
+### Municipalities (Municipios)
+Geographic divisions representing municipalities across Yucatan, each with their own geographic boundaries and associated public works.
+
+### Dependencies (Dependencias)
+Government departments and agencies responsible for executing public works projects.
+
+### Users
+System users with role-based permissions (Admin or User) and the ability to favorite obras for quick access.
+
+### Catalogs
+Supporting catalog entities including:
+- **Localidades**: Localities within municipalities
+- **Tipo Proyecto**: Project types (infrastructure, social, etc.)
+- **Estatus Obra**: Work status (planning, in progress, completed)
+- **Ejercicio Fiscal**: Fiscal years for budget tracking
+
+## Architecture Overview
+
+The API is built with modern technologies:
+
+- **Framework**: NestJS with TypeScript
+- **Database**: PostgreSQL with PostGIS extension
+- **ORM**: TypeORM for type-safe database operations
+- **Authentication**: JWT tokens with Passport.js
+- **Validation**: Class-validator for request validation
+- **API Style**: RESTful with JSON payloads
+
+<Note>
+  The API runs on port 3000 by default and includes CORS support for cross-origin requests.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Start Building"
+    icon="hammer"
+    href="/quickstart"
+  >
+    Follow the quickstart guide to make your first API request
+  </Card>
+  <Card
+    title="Learn Authentication"
+    icon="key"
+    href="/authentication/overview"
+  >
+    Understand how to authenticate and authorize requests
+  </Card>
+</CardGroup>

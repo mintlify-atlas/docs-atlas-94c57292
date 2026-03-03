@@ -1,80 +1,257 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get the Yucatan Public Works API running locally in minutes
 ---
 
-## Get started in three steps
+## Get Started in 5 Minutes
 
-Get your documentation site running locally and make your first customization.
+This guide will help you get the API running locally and make your first request. You'll set up the database, start the server, and authenticate to retrieve public works data.
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Clone the Repository">
+    First, clone the repository and navigate to the project directory:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    git clone <repository-url>
+    cd back_sdo
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required npm packages:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash
+    npm install
+    ```
+  </Step>
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  <Step title="Start the Database">
+    Use Docker Compose to launch PostgreSQL with PostGIS:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```bash
+    docker-compose up -d
+    ```
+    
+    This starts a PostgreSQL database with the PostGIS extension on port 5432.
+    
+    <Note>
+      Make sure Docker is installed and running on your system before executing this command.
+    </Note>
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Configure Environment">
+    Create a `.env` file in the project root with your database credentials:
+    
+    ```bash .env
+    DATABASE_HOST=localhost
+    DATABASE_PORT=5432
+    DATABASE_USER=admin
+    DATABASE_PASSWORD=password123
+    DATABASE_NAME=obras_yucatan_db
+    ```
+    
+    <Warning>
+      These are the default credentials from docker-compose.yml. Change them for production use.
+    </Warning>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Start the Development Server">
+    Launch the API in development mode with auto-reload:
+    
+    ```bash
+    npm run start:dev
+    ```
+    
+    You should see:
+    ```
+    🚀 Servidor corriendo en http://localhost:3000
+    ```
+  </Step>
+</Steps>
 
-### Step 3: Go live
+## Make Your First Request
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Now that the API is running, let's authenticate and retrieve some data.
 
-## Next steps
+### 1. Login to Get a JWT Token
 
-Now that you have your docs running, explore these key features:
+The API uses JWT authentication. First, obtain an access token:
 
-<CardGroup cols={2}>
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "your-password"
+  }'
+```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "email": "admin@example.com",
+    "role": "admin"
+  }
+}
+```
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Save the `access_token` - you'll need it for authenticated requests.
 </Note>
+
+### 2. Retrieve Public Works
+
+Use the token to fetch the list of obras (public works):
+
+```bash
+curl -X GET http://localhost:3000/obras \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "numeroObra": 1,
+    "claveUnica": "YUC-2024-001",
+    "nombre": "Pavimentación de Calle Principal",
+    "descripcion": "Obra de pavimentación en zona centro",
+    "monto": 1500000.00,
+    "municipio": {
+      "id": 1,
+      "nombre": "Mérida"
+    },
+    "estatusObra": {
+      "id": 2,
+      "nombre": "En Proceso"
+    },
+    "ejercicioFiscal": {
+      "id": 1,
+      "anio": 2024
+    }
+  }
+]
+```
+
+### 3. Get a Specific Obra
+
+Retrieve details for a single public work by ID:
+
+```bash
+curl -X GET http://localhost:3000/obras/1 \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## Understanding the Response
+
+Each obra (public work) includes:
+
+- **numeroObra**: Sequential number for the fiscal year
+- **claveUnica**: Unique identifier for the project
+- **nombre**: Project name
+- **monto**: Budget amount in Mexican pesos
+- **municipio**: Associated municipality
+- **estatusObra**: Current project status
+- **ejercicioFiscal**: Fiscal year
+- **dependencia**: Government agency responsible
+- **ubicaciones**: Geographic locations (with PostGIS data)
+
+<CodeGroup>
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/obras', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+});
+
+const obras = await response.json();
+console.log(obras);
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {access_token}'
+}
+
+response = requests.get('http://localhost:3000/obras', headers=headers)
+obras = response.json()
+print(obras)
+```
+
+```bash cURL
+curl -X GET http://localhost:3000/obras \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+</CodeGroup>
+
+## Role-Based Access Control
+
+The API implements role-based permissions:
+
+| Action | Admin | User |
+|--------|-------|------|
+| View obras | ✅ | ✅ |
+| Create obra | ✅ | ❌ |
+| Update obra | ✅ | ❌ |
+| Delete obra | ✅ | ❌ |
+
+<Warning>
+  Only admin users can create, update, or delete obras. Regular users have read-only access.
+</Warning>
+
+## Filtering and Pagination
+
+The API supports query parameters for filtering:
+
+```bash
+# Filter by municipality
+curl -X GET "http://localhost:3000/obras?municipioId=1" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+# Filter by status
+curl -X GET "http://localhost:3000/obras?estatusObraId=2" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+# Filter by fiscal year
+curl -X GET "http://localhost:3000/obras?ejercicioFiscalId=1" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Full Installation Guide"
+    icon="book"
+    href="/installation"
+  >
+    Learn about production setup, migrations, and troubleshooting
+  </Card>
+  <Card
+    title="Authentication Guide"
+    icon="lock"
+    href="/authentication/overview"
+  >
+    Deep dive into JWT authentication and role management
+  </Card>
+  <Card
+    title="API Reference"
+    icon="rectangle-terminal"
+    href="/api-reference/obras/list-obras"
+  >
+    Explore all available endpoints and parameters
+  </Card>
+  <Card
+    title="Database Schema"
+    icon="database"
+    href="/concepts/database-schema"
+  >
+    Understand the data model and relationships
+  </Card>
+</CardGroup>

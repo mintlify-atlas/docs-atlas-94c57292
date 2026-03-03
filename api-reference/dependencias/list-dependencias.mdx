@@ -1,0 +1,81 @@
+---
+title: 'List Dependencies'
+description: 'Retrieve a list of all government dependencies'
+---
+
+## GET /dependencias
+
+Returns a list of government dependencies (dependencias). By default, only active dependencies are returned. Use the `ver_todo` query parameter to include inactive dependencies.
+
+### Authentication
+
+No authentication required. This is a public endpoint.
+
+### Query Parameters
+
+<ParamField query="ver_todo" type="string" default="false">
+  Set to `"true"` to include inactive dependencies in the response. By default, only active dependencies are returned.
+  
+  **Example:** `ver_todo=true`
+</ParamField>
+
+### Response
+
+Returns an array of dependency objects, sorted alphabetically by name.
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the dependency
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Full name of the dependency
+</ResponseField>
+
+<ResponseField name="siglas" type="string">
+  Acronym or abbreviation for the dependency (automatically converted to uppercase)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Indicates whether the dependency is active. Defaults to `true`
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash Active Dependencies Only
+curl -X GET http://localhost:3000/dependencias
+```
+
+```bash All Dependencies (Including Inactive)
+curl -X GET "http://localhost:3000/dependencias?ver_todo=true"
+```
+</CodeGroup>
+
+### Example Response
+
+```json 200 - Success
+[
+  {
+    "id": 1,
+    "nombre": "Secretaría de Desarrollo Urbano",
+    "siglas": "SDU",
+    "activo": true
+  },
+  {
+    "id": 2,
+    "nombre": "Secretaría de Obras Públicas",
+    "siglas": "SOP",
+    "activo": true
+  },
+  {
+    "id": 3,
+    "nombre": "Instituto de Vivienda",
+    "siglas": "IVEY",
+    "activo": false
+  }
+]
+```
+
+<Note>
+  The response is always sorted alphabetically by the `nombre` field in ascending order (A-Z).
+</Note>

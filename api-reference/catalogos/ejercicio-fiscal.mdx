@@ -1,0 +1,367 @@
+---
+title: 'Ejercicio Fiscal'
+description: 'Manage fiscal year catalog data'
+---
+
+## Overview
+
+Ejercicio Fiscal (fiscal year) defines the budget year for public works projects. This catalog maintains the list of fiscal years that can be associated with projects.
+
+## Get All Fiscal Years
+
+<api-endpoint>
+  <api-endpoint-request>
+    GET /ejercicio-fiscal
+  </api-endpoint-request>
+</api-endpoint>
+
+Retrieves a list of all fiscal years in the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Response
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the fiscal year
+</ResponseField>
+
+<ResponseField name="anio" type="number" required>
+  The fiscal year (e.g., 2025, must be unique)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Status flag indicating if the fiscal year is active (default: true)
+</ResponseField>
+
+### Example Request
+
+```bash
+curl --request GET \
+  --url http://localhost:3000/ejercicio-fiscal \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "anio": 2024,
+    "activo": true
+  },
+  {
+    "id": 2,
+    "anio": 2025,
+    "activo": true
+  },
+  {
+    "id": 3,
+    "anio": 2026,
+    "activo": false
+  }
+]
+```
+
+---
+
+## Get Active Fiscal Years
+
+<api-endpoint>
+  <api-endpoint-request>
+    GET /ejercicio-fiscal/activos
+  </api-endpoint-request>
+</api-endpoint>
+
+Retrieves a list of only active fiscal years in the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Response
+
+Returns an array of fiscal year objects where `activo` is `true`.
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the fiscal year
+</ResponseField>
+
+<ResponseField name="anio" type="number" required>
+  The fiscal year
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Always true for this endpoint
+</ResponseField>
+
+### Example Request
+
+```bash
+curl --request GET \
+  --url http://localhost:3000/ejercicio-fiscal/activos \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "anio": 2024,
+    "activo": true
+  },
+  {
+    "id": 2,
+    "anio": 2025,
+    "activo": true
+  }
+]
+```
+
+---
+
+## Get Fiscal Year by ID
+
+<api-endpoint>
+  <api-endpoint-request>
+    GET /ejercicio-fiscal/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Retrieves a single fiscal year by its unique identifier.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the fiscal year to retrieve
+</ParamField>
+
+### Response
+
+Returns a single fiscal year object with the following fields:
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the fiscal year
+</ResponseField>
+
+<ResponseField name="anio" type="number" required>
+  The fiscal year
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Status flag indicating if the fiscal year is active
+</ResponseField>
+
+### Example Request
+
+```bash
+curl --request GET \
+  --url http://localhost:3000/ejercicio-fiscal/2 \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+{
+  "id": 2,
+  "anio": 2025,
+  "activo": true
+}
+```
+
+### Error Responses
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (404 if fiscal year not found)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+```json
+{
+  "statusCode": 404,
+  "message": "Fiscal year not found"
+}
+```
+
+---
+
+## Create Fiscal Year
+
+<api-endpoint>
+  <api-endpoint-request>
+    POST /ejercicio-fiscal
+  </api-endpoint-request>
+</api-endpoint>
+
+Creates a new fiscal year in the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Request Body
+
+<ParamField body="anio" type="number" required>
+  The fiscal year (must be unique, between 2000 and 2100)
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Status flag (defaults to true if not provided)
+</ParamField>
+
+### Validation Rules
+
+<Info>
+  - **anio** is required and must be a number
+  - **anio** must be between 2000 and 2100
+  - **anio** must be unique across all fiscal years
+  - **activo** is optional and defaults to true
+</Info>
+
+### Example Request
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/ejercicio-fiscal \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "anio": 2027,
+    "activo": true
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": 4,
+  "anio": 2027,
+  "activo": true
+}
+```
+
+### Error Response
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "anio should not be empty",
+    "anio must be a number conforming to the specified constraints",
+    "anio must not be less than 2000",
+    "anio must not be greater than 2100"
+  ],
+  "error": "Bad Request"
+}
+```
+
+---
+
+## Update Fiscal Year
+
+<api-endpoint>
+  <api-endpoint-request>
+    PATCH /ejercicio-fiscal/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Updates an existing fiscal year.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the fiscal year to update
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="anio" type="number">
+  The fiscal year (must be unique if provided, between 2000 and 2100)
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Status flag
+</ParamField>
+
+### Example Request
+
+```bash
+curl --request PATCH \
+  --url http://localhost:3000/ejercicio-fiscal/3 \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "activo": true
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": 3,
+  "anio": 2026,
+  "activo": true
+}
+```
+
+---
+
+## Delete Fiscal Year
+
+<api-endpoint>
+  <api-endpoint-request>
+    DELETE /ejercicio-fiscal/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Deletes a fiscal year from the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the fiscal year to delete
+</ParamField>
+
+<Info>
+  Deleting a fiscal year that is referenced by existing projects may fail due to foreign key constraints. Consider setting **activo** to false instead.
+</Info>
+
+### Example Request
+
+```bash
+curl --request DELETE \
+  --url http://localhost:3000/ejercicio-fiscal/4 \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+{
+  "message": "Fiscal year deleted successfully"
+}
+```

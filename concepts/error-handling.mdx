@@ -1,0 +1,487 @@
+---
+title: 'Error Handling'
+description: 'Understanding HTTP exceptions and error responses in the Yucatan Public Works API'
+icon: 'triangle-exclamation'
+---
+
+## Overview
+
+The API uses NestJS's built-in HTTP exceptions to provide standardized error responses. All exceptions follow a consistent JSON structure for easy client-side handling.
+
+## Standard Error Response Format
+
+All HTTP exceptions return this structure:
+
+<CodeGroup>
+```json Standard Error
+{
+  "statusCode": 400,
+  "message": "Error description or array of messages",
+  "error": "Error Type Name"
+}
+```
+
+```json Validation Error
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 6 characters"
+  ],
+  "error": "Bad Request"
+}
+```
+</CodeGroup>
+
+## Common HTTP Exceptions
+
+### BadRequestException (400)
+
+Used for validation errors and invalid input.
+
+<CodeGroup>
+```typescript Usage
+import { BadRequestException } from '@nestjs/common';
+
+if (!user) {
+  throw new BadRequestException('El correo electrónico ya está registrado.');
+}
+
+if (favorite) {
+  throw new BadRequestException('Esta obra ya está en tus favoritas');
+}
+```
+
+```json Response
+{
+  "statusCode": 400,
+  "message": "El correo electrónico ya está registrado.",
+  "error": "Bad Request"
+}
+```
+</CodeGroup>
+
+**Common Use Cases:**
+- Duplicate entries
+- Invalid data format
+- Business rule violations
+- Already existing resources
+
+**Location Examples:**
+- `/home/daytona/workspace/source/src/users/users.service.ts:161`
+- `/home/daytona/workspace/source/src/users/users.service.ts:105`
+
+### UnauthorizedException (401)
+
+Used when authentication fails or credentials are invalid.
+
+<CodeGroup>
+```typescript Usage
+import { UnauthorizedException } from '@nestjs/common';
+
+@Post('login')
+async login(@Body() body) {
+  const user = await this.authService.validateUser(body.email, body.password);
+  
+  if (!user) {
+    throw new UnauthorizedException('Credenciales inválidas');
+  }
+
+  return this.authService.login(user);
+}
+```
+
+```json Response
+{
+  "statusCode": 401,
+  "message": "Credenciales inválidas",
+  "error": "Unauthorized"
+}
+```
+</CodeGroup>
+
+**Common Use Cases:**
+- Invalid login credentials
+- Missing JWT token
+- Expired token
+- Invalid token signature
+
+**Location:** `/home/daytona/workspace/source/src/auth/auth.controller.ts:14`
+
+### ForbiddenException (403)
+
+Used when a user is authenticated but lacks permission to access a resource.
+
+<CodeGroup>
+```typescript Usage
+import { ForbiddenException } from '@nestjs/common';
+
+@Get(':id')
+findOne(
+  @Param('id') id: string,
+  @GetUser() user: any
+) {
+  // User is logged in but trying to access another user's profile
+  if (user.roles !== 'admin' && user.userId !== id) {
+    throw new ForbiddenException('No tienes permiso para ver este perfil.');
+  }
+  return this.usersService.findOne(id);
+}
+```
+
+```json Response
+{
+  "statusCode": 403,
+  "message": "No tienes permiso para ver este perfil.",
+  "error": "Forbidden"
+}
+```
+</CodeGroup>
+
+**Common Use Cases:**
+- Accessing another user's data
+- Non-admin trying admin operations
+- Modifying resources without ownership
+- Role-based access denial
+
+**Location Examples:**
+- `/home/daytona/workspace/source/src/users/users.controller.ts:52`
+- `/home/daytona/workspace/source/src/users/users.controller.ts:66`
+- `/home/daytona/workspace/source/src/users/users.controller.ts:89`
+
+### NotFoundException (404)
+
+Used when a requested resource doesn't exist.
+
+<CodeGroup>
+```typescript Usage
+import { NotFoundException } from '@nestjs/common';
+
+async findOne(id: string) {
+  const user = await this.userRepository.findOneBy({ id });
+  
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
+  }
+  
+  return user;
+}
+```
+
+```json Response
+{
+  "statusCode": 404,
+  "message": "Obra 123 no encontrada.",
+  "error": "Not Found"
+}
+```
+</CodeGroup>
+
+**Common Use Cases:**
+- Entity not found by ID
+- Resource deleted or never existed
+- Invalid foreign key references
+
+**Location Examples:**
+- `/home/daytona/workspace/source/src/users/users.service.ts:49`
+- `/home/daytona/workspace/source/src/obras/obras.service.ts:115`
+- `/home/daytona/workspace/source/src/dependencias/dependencias.service.ts:34`
+
+### ConflictException (409)
+
+Used when a request conflicts with the current state.
+
+<CodeGroup>
+```typescript Usage
+import { ConflictException } from '@nestjs/common';
+
+async create(dto: CreateObraDto) {
+  try {
+    return await this.obraRepository.save(dto);
+  } catch (error) {
+    if (error.code === '23505') { // Postgres unique violation
+      throw new ConflictException('La clave única ya existe');
+    }
+    throw error;
+  }
+}
+```
+
+```json Response
+{
+  "statusCode": 409,
+  "message": "La clave única ya existe",
+  "error": "Conflict"
+}
+```
+</CodeGroup>
+
+**Common Use Cases:**
+- Unique constraint violations
+- State conflicts (e.g., deleting an active record)
+- Race conditions
+
+**Location:** `/home/daytona/workspace/source/src/obras/obras.service.ts:1`
+
+## Real-World Error Examples
+
+### Authentication Flow
+
+<Steps>
+  <Step title="User submits login">
+    POST `/auth/login` with email and password
+  </Step>
+  <Step title="Validation check">
+    If credentials are invalid → `UnauthorizedException`
+    
+    ```json
+    {
+      "statusCode": 401,
+      "message": "Credenciales inválidas",
+      "error": "Unauthorized"
+    }
+    ```
+  </Step>
+  <Step title="Success response">
+    If valid → return JWT token
+  </Step>
+</Steps>
+
+### Authorization Flow
+
+<Steps>
+  <Step title="User makes authenticated request">
+    GET `/users/{someOtherId}` with valid JWT
+  </Step>
+  <Step title="Permission check">
+    If not admin AND not own profile → `ForbiddenException`
+    
+    ```json
+    {
+      "statusCode": 403,
+      "message": "No tienes permiso para ver este perfil.",
+      "error": "Forbidden"
+    }
+    ```
+  </Step>
+  <Step title="Success response">
+    If authorized → return user data
+  </Step>
+</Steps>
+
+### Resource Operations
+
+<CodeGroup>
+```typescript Finding a Resource
+// GET /obras/999
+const obra = await this.obraRepository.findOneBy({ id: 999 });
+
+if (!obra) {
+  throw new NotFoundException('Obra 999 no encontrada.');
+}
+// Response: 404 Not Found
+```
+
+```typescript Creating Duplicates
+// POST /users
+// Body: { "email": "existing@example.com" }
+
+const existingUser = await this.userRepository.findOne({ 
+  where: { email: dto.email } 
+});
+
+if (existingUser) {
+  throw new BadRequestException('El correo electrónico ya está registrado.');
+}
+// Response: 400 Bad Request
+```
+
+```typescript Adding Duplicate Favorites
+// POST /users/{id}/favorites/{obraId}
+
+const favorite = await this.favoritesRepository.findOne({
+  where: { userId: id, obraId }
+});
+
+if (favorite) {
+  throw new BadRequestException('Esta obra ya está en tus favoritas');
+}
+// Response: 400 Bad Request
+```
+</CodeGroup>
+
+## Permission Error Patterns
+
+### User Resource Protection
+
+<CodeGroup>
+```typescript View Profile
+@Get(':id')
+findOne(@Param('id') id: string, @GetUser() user: any) {
+  if (user.roles !== 'admin' && user.userId !== id) {
+    throw new ForbiddenException('No tienes permiso para ver este perfil.');
+  }
+  return this.usersService.findOne(id);
+}
+```
+
+```typescript Update Profile
+@Patch(':id')
+update(
+  @Param('id') id: string,
+  @Body() dto: UpdateUserDto,
+  @GetUser() user: any
+) {
+  if (user.roles !== 'admin' && user.userId !== id) {
+    throw new ForbiddenException('No puedes modificar los datos de otro usuario.');
+  }
+  return this.usersService.update(id, dto);
+}
+```
+
+```typescript Manage Favorites
+@Post(':id/favorites/:obraId')
+addFavorite(
+  @Param('id') id: string,
+  @Param('obraId') obraId: number,
+  @GetUser() user: any
+) {
+  if (user.userId !== id) {
+    throw new ForbiddenException('No puedes modificar los favoritos de otro usuario.');
+  }
+  return this.usersService.addFavorite(id, obraId);
+}
+```
+</CodeGroup>
+
+**Locations:**
+- `/home/daytona/workspace/source/src/users/users.controller.ts:45-54`
+- `/home/daytona/workspace/source/src/users/users.controller.ts:58-68`
+- `/home/daytona/workspace/source/src/users/users.controller.ts:81-91`
+
+## Validation Errors
+
+Validation errors are automatically handled by the `ValidationPipe` and return `400 Bad Request`:
+
+<CodeGroup>
+```typescript DTO Validation
+export class CreateUserDto {
+  @IsEmail()
+  email: string;
+
+  @MinLength(6)
+  password: string;
+}
+```
+
+```json Error Response
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 6 characters"
+  ],
+  "error": "Bad Request"
+}
+```
+</CodeGroup>
+
+<Info>
+  Validation errors are configured in `main.ts:8-14` with the global `ValidationPipe`.
+</Info>
+
+## Error Handling Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Be Specific" icon="bullseye">
+    Use descriptive error messages that help users understand what went wrong.
+    ```typescript
+    throw new NotFoundException(`Obra ${id} no encontrada.`);
+    ```
+  </Card>
+  <Card title="Choose Correct Status" icon="traffic-light">
+    - 400: Bad input
+    - 401: Not authenticated
+    - 403: Not authorized
+    - 404: Not found
+    - 409: Conflict
+  </Card>
+  <Card title="Avoid Exposing Internals" icon="user-secret">
+    Don't leak database errors or stack traces to clients in production.
+    ```typescript
+    catch (error) {
+      throw new BadRequestException('No se pudo crear el registro');
+    }
+    ```
+  </Card>
+  <Card title="Consistent Messages" icon="language">
+    Keep error messages in the same language throughout the API (Spanish in this project).
+  </Card>
+</CardGroup>
+
+## Quick Reference
+
+<AccordionGroup>
+  <Accordion title="401 vs 403: What's the difference?">
+    **401 Unauthorized:** User is not logged in or token is invalid.
+    ```typescript
+    throw new UnauthorizedException('Credenciales inválidas');
+    ```
+    
+    **403 Forbidden:** User is logged in but doesn't have permission.
+    ```typescript
+    throw new ForbiddenException('No tienes permiso para esta acción.');
+    ```
+  </Accordion>
+  
+  <Accordion title="400 vs 409: When to use each?">
+    **400 Bad Request:** General validation errors or bad input.
+    ```typescript
+    throw new BadRequestException('Email ya registrado');
+    ```
+    
+    **409 Conflict:** Specific state conflicts (usually from database constraints).
+    ```typescript
+    throw new ConflictException('Clave única duplicada');
+    ```
+  </Accordion>
+  
+  <Accordion title="How to handle database errors?">
+    Catch database errors and convert to appropriate HTTP exceptions:
+    ```typescript
+    try {
+      await this.repository.save(entity);
+    } catch (error) {
+      if (error.code === '23505') { // Unique violation
+        throw new ConflictException('Registro duplicado');
+      }
+      if (error.code === '23503') { // Foreign key violation
+        throw new BadRequestException('Referencia inválida');
+      }
+      throw new InternalServerErrorException('Error del servidor');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## HTTP Status Code Summary
+
+| Status Code | Exception | Use Case | Example |
+|-------------|-----------|----------|----------|
+| 400 | `BadRequestException` | Invalid input, validation errors | "Email ya registrado" |
+| 401 | `UnauthorizedException` | Authentication failure | "Credenciales inválidas" |
+| 403 | `ForbiddenException` | Permission denied | "No tienes permiso" |
+| 404 | `NotFoundException` | Resource not found | "Obra 123 no encontrada" |
+| 409 | `ConflictException` | State conflict | "Clave única duplicada" |
+| 500 | `InternalServerErrorException` | Server error | "Error del servidor" |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="database" href="/concepts/database-schema">
+    Learn about entity relationships
+  </Card>
+  <Card title="Validation" icon="shield-check" href="/concepts/validation">
+    Understand request validation
+  </Card>
+</CardGroup>

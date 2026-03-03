@@ -1,0 +1,434 @@
+---
+title: Installation
+description: Complete installation guide for the Yucatan Public Works API with database setup, configuration, and deployment options
+---
+
+## Prerequisites
+
+Before installing the Yucatan Public Works API, ensure you have the following installed:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 18.x or higher recommended
+  </Card>
+  <Card title="PostgreSQL" icon="database">
+    Version 15.x with PostGIS 3.3+ extension
+  </Card>
+  <Card title="npm" icon="npm">
+    Version 8.x or higher (comes with Node.js)
+  </Card>
+  <Card title="Docker" icon="docker">
+    Optional but recommended for database setup
+  </Card>
+</CardGroup>
+
+<Note>
+  You can verify your Node.js version with `node --version` and npm with `npm --version`
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the source code from your repository:
+    
+    ```bash
+    git clone <repository-url>
+    cd back_sdo
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required npm packages:
+    
+    ```bash
+    npm install
+    ```
+    
+    This installs:
+    - NestJS framework and core modules
+    - TypeORM for database operations
+    - Passport.js for authentication
+    - Class-validator for request validation
+    - And other dependencies listed in package.json
+  </Step>
+
+  <Step title="Set Up the Database">
+    Choose one of the following methods to set up PostgreSQL with PostGIS:
+
+    ### Option A: Using Docker Compose (Recommended)
+    
+    The easiest way to get started is using the included Docker Compose configuration:
+    
+    ```bash
+    docker-compose up -d
+    ```
+    
+    This creates a PostgreSQL database with:
+    - **Image**: postgis/postgis:15-3.3
+    - **Port**: 5432
+    - **Database**: obras_yucatan_db
+    - **User**: admin
+    - **Password**: password123
+    
+    <Accordion title="View docker-compose.yml">
+    ```yaml
+    version: '3.8'
+
+    services:
+      db:
+        image: postgis/postgis:15-3.3
+        restart: always
+        ports:
+          - "5432:5432"
+        environment:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: obras_yucatan_db
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+
+    volumes:
+      postgres_data:
+    ```
+    </Accordion>
+
+    ### Option B: Manual PostgreSQL Installation
+    
+    If you prefer to install PostgreSQL manually:
+    
+    1. Install PostgreSQL 15 or higher
+    2. Install the PostGIS extension
+    3. Create the database:
+    
+    ```sql
+    CREATE DATABASE obras_yucatan_db;
+    CREATE USER admin WITH PASSWORD 'password123';
+    GRANT ALL PRIVILEGES ON DATABASE obras_yucatan_db TO admin;
+    
+    -- Connect to the database and enable PostGIS
+    \c obras_yucatan_db
+    CREATE EXTENSION postgis;
+    ```
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Create a `.env` file in the project root directory:
+    
+    ```bash
+    cp .env.example .env
+    ```
+    
+    Edit the `.env` file with your configuration:
+    
+    ```bash .env
+    DATABASE_HOST=localhost
+    DATABASE_PORT=5432
+    DATABASE_USER=admin
+    DATABASE_PASSWORD=password123
+    DATABASE_NAME=obras_yucatan_db
+    ```
+    
+    ### Environment Variables Reference
+    
+    | Variable | Description | Default |
+    |----------|-------------|----------|
+    | `DATABASE_HOST` | PostgreSQL host address | `localhost` |
+    | `DATABASE_PORT` | PostgreSQL port | `5432` |
+    | `DATABASE_USER` | Database username | `admin` |
+    | `DATABASE_PASSWORD` | Database password | `password123` |
+    | `DATABASE_NAME` | Database name | `obras_yucatan_db` |
+    
+    <Warning>
+      Never commit the `.env` file to version control. It contains sensitive credentials.
+    </Warning>
+  </Step>
+
+  <Step title="Run Database Migrations">
+    TypeORM will automatically synchronize the database schema when you start the application.
+    
+    The API uses TypeORM's `synchronize` option in development, which automatically creates tables based on your entities.
+    
+    <Note>
+      In production, you should disable `synchronize` and use proper migrations instead.
+    </Note>
+  </Step>
+
+  <Step title="Start the Application">
+    You're ready to run the API!
+    
+    <CodeGroup>
+    ```bash Development
+    npm run start:dev
+    ```
+    
+    ```bash Production Build
+    npm run build
+    npm run start:prod
+    ```
+    
+    ```bash Debug Mode
+    npm run start:debug
+    ```
+    </CodeGroup>
+    
+    If successful, you'll see:
+    ```
+    🚀 Servidor corriendo en http://localhost:3000
+    ```
+  </Step>
+</Steps>
+
+## Verify Installation
+
+Test that the API is running correctly:
+
+```bash
+curl http://localhost:3000
+```
+
+You can also check the health of your database connection by attempting to log in (you'll need to create a user first or use seeded data).
+
+## Running Modes
+
+The API supports different running modes for various environments:
+
+### Development Mode
+
+Runs with auto-reload on file changes:
+
+```bash
+npm run start:dev
+```
+
+**Features:**
+- Hot reload on code changes
+- Detailed error messages
+- Database synchronization enabled
+- CORS enabled for all origins
+
+### Production Mode
+
+Optimized build for production deployment:
+
+```bash
+npm run build
+npm run start:prod
+```
+
+**Features:**
+- Compiled JavaScript output
+- Optimized performance
+- Should disable database synchronization
+- Configure CORS for specific origins
+
+### Debug Mode
+
+Runs with Node.js debugger attached:
+
+```bash
+npm run start:debug
+```
+
+Attach your debugger to port 9229.
+
+## Database Schema
+
+The API automatically creates the following main tables:
+
+- **obras**: Public works projects
+- **obra_ubicaciones**: Geographic locations for obras (PostGIS)
+- **users**: System users with role-based access
+- **user_favorite_obras**: User favorites relationship
+- **municipios**: Municipalities
+- **dependencias**: Government dependencies
+- **tipo_proyecto**: Project type catalog
+- **estatus_obra**: Work status catalog
+- **ejercicio_fiscal**: Fiscal year catalog
+- **localidad**: Locality catalog
+
+## Configuration Details
+
+The API includes several important configurations:
+
+### Global Validation Pipe
+
+From `src/main.ts:9-15`:
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,              // Remove unknown properties
+    forbidNonWhitelisted: true,   // Throw error on unknown properties
+    transform: true,              // Transform payloads to DTO instances
+  }),
+);
+```
+
+### CORS Configuration
+
+From `src/main.ts:18-23`:
+
+```typescript
+app.enableCors({
+  origin: '*',                    // Allow all origins (development)
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+});
+```
+
+<Warning>
+  In production, restrict CORS `origin` to your specific frontend domains instead of using `'*'`.
+</Warning>
+
+## Troubleshooting
+
+### Database Connection Issues
+
+**Problem:** Cannot connect to PostgreSQL
+
+**Solutions:**
+- Verify Docker container is running: `docker ps`
+- Check database credentials in `.env` match docker-compose.yml
+- Ensure PostgreSQL is listening on port 5432: `netstat -an | grep 5432`
+- Check firewall settings
+
+### PostGIS Extension Missing
+
+**Problem:** Error about PostGIS geometry types
+
+**Solutions:**
+```sql
+-- Connect to your database
+\c obras_yucatan_db
+
+-- Enable PostGIS extension
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- Verify installation
+SELECT PostGIS_Version();
+```
+
+### Port Already in Use
+
+**Problem:** Port 3000 is already in use
+
+**Solutions:**
+- Kill the process using port 3000:
+  ```bash
+  # Find process
+  lsof -i :3000
+  
+  # Kill process
+  kill -9 <PID>
+  ```
+- Or change the port in `src/main.ts:25`
+
+### Module Not Found Errors
+
+**Problem:** Cannot find module errors after installation
+
+**Solutions:**
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### TypeORM Synchronization Issues
+
+**Problem:** Tables not being created
+
+**Solutions:**
+- Verify database exists and is accessible
+- Check TypeORM configuration in your app module
+- Manually create the database if needed
+- Review entity files for syntax errors
+
+## Production Deployment
+
+For production deployment, consider:
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear">
+    Use a secrets manager for sensitive credentials
+  </Card>
+  <Card title="Database Migrations" icon="database">
+    Disable `synchronize` and use proper migrations
+  </Card>
+  <Card title="CORS Configuration" icon="shield">
+    Restrict origins to your frontend domains
+  </Card>
+  <Card title="Process Manager" icon="server">
+    Use PM2 or similar for process management
+  </Card>
+</CardGroup>
+
+### Production Environment Variables
+
+```bash .env.production
+NODE_ENV=production
+DATABASE_HOST=your-production-host
+DATABASE_PORT=5432
+DATABASE_USER=your-prod-user
+DATABASE_PASSWORD=your-secure-password
+DATABASE_NAME=obras_yucatan_db
+DATABASE_SSL=true
+JWT_SECRET=your-very-secure-secret
+```
+
+### Using PM2 for Production
+
+```bash
+# Install PM2 globally
+npm install -g pm2
+
+# Build the application
+npm run build
+
+# Start with PM2
+pm2 start dist/main.js --name yucatan-api
+
+# View logs
+pm2 logs yucatan-api
+
+# Restart on file changes
+pm2 reload yucatan-api
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Authentication Setup"
+    icon="key"
+    href="/authentication/overview"
+  >
+    Configure JWT tokens and create your first users
+  </Card>
+  <Card
+    title="Database Schema"
+    icon="diagram-project"
+    href="/concepts/database-schema"
+  >
+    Understand the complete data model
+  </Card>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/api-reference/auth/login"
+  >
+    Explore all available API endpoints
+  </Card>
+  <Card
+    title="Quick Start Guide"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Make your first API requests
+  </Card>
+</CardGroup>

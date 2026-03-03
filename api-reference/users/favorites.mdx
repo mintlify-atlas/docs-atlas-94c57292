@@ -1,0 +1,320 @@
+---
+title: 'User Favorites'
+description: 'Manage user favorite obras (public works projects)'
+---
+
+## Overview
+
+These endpoints allow users to manage their favorite obras (public works projects). Users can add obras to their favorites, remove them, and retrieve their complete list of favorites with pagination.
+
+<Warning>
+  **Owner Only** - Users can only manage their own favorites. Attempting to modify another user's favorites will result in a 403 Forbidden error.
+</Warning>
+
+---
+
+## Add Favorite
+
+<CodeGroup>
+```bash POST /users/:id/favorites/:obraId
+curl -X POST https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000/favorites/1234 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+</CodeGroup>
+
+Add an obra to the user's favorites list.
+
+### Path Parameters
+
+<ParamField path="id" type="string (UUID)" required>
+  The user's unique identifier. Must match the authenticated user's ID.
+</ParamField>
+
+<ParamField path="obraId" type="integer" required>
+  The ID of the obra to add to favorites.
+</ParamField>
+
+### Authentication
+
+Requires a valid JWT token. The authenticated user's ID must match the `:id` parameter.
+
+### Response
+
+<ResponseField name="id" type="integer">
+  Unique identifier for the favorite record
+</ResponseField>
+
+<ResponseField name="userId" type="string (UUID)">
+  The user's ID
+</ResponseField>
+
+<ResponseField name="obraId" type="integer">
+  The obra's ID
+</ResponseField>
+
+<ResponseField name="createdAt" type="string (ISO 8601)">
+  Timestamp when the favorite was added
+</ResponseField>
+
+### Example Response
+
+```json 201 Created
+{
+  "id": 1,
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "obraId": 1234,
+  "createdAt": "2024-03-03T17:00:00.000Z"
+}
+```
+
+```json 400 Bad Request - Already in Favorites
+{
+  "statusCode": 400,
+  "message": "Esta obra ya está en tus favoritas"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "No puedes modificar los favoritos de otro usuario."
+}
+```
+
+```json 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Usuario no encontrado"
+}
+```
+
+### Authorization Rules
+
+- The authenticated user's `userId` must match the `:id` path parameter
+- Admins do NOT have special privileges for this endpoint
+- The user must exist in the database
+- The obra cannot already be in the user's favorites (checked via unique constraint)
+
+See implementation in `/home/daytona/workspace/source/src/users/users.controller.ts:81`
+
+---
+
+## Remove Favorite
+
+<CodeGroup>
+```bash DELETE /users/:id/favorites/:obraId
+curl -X DELETE https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000/favorites/1234 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+</CodeGroup>
+
+Remove an obra from the user's favorites list.
+
+### Path Parameters
+
+<ParamField path="id" type="string (UUID)" required>
+  The user's unique identifier. Must match the authenticated user's ID.
+</ParamField>
+
+<ParamField path="obraId" type="integer" required>
+  The ID of the obra to remove from favorites.
+</ParamField>
+
+### Authentication
+
+Requires a valid JWT token. The authenticated user's ID must match the `:id` parameter.
+
+### Response
+
+<ResponseField name="message" type="string">
+  Confirmation message: "Obra removida de favoritas"
+</ResponseField>
+
+### Example Response
+
+```json 200 Success
+{
+  "message": "Obra removida de favoritas"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "No puedes modificar los favoritos de otro usuario."
+}
+```
+
+```json 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Esta obra no está en tus favoritas"
+}
+```
+
+### Authorization Rules
+
+- The authenticated user's `userId` must match the `:id` path parameter
+- Admins do NOT have special privileges for this endpoint
+- The obra must exist in the user's favorites to be removed
+
+See implementation in `/home/daytona/workspace/source/src/users/users.controller.ts:94`
+
+---
+
+## Get User Favorites
+
+<CodeGroup>
+```bash GET /users/:id/favorites
+curl -X GET "https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000/favorites?limit=10&page=1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+</CodeGroup>
+
+Retrieve a paginated list of the user's favorite obras with full obra details including related entities.
+
+### Path Parameters
+
+<ParamField path="id" type="string (UUID)" required>
+  The user's unique identifier
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="limit" type="integer" default="10">
+  Number of items per page (optional)
+</ParamField>
+
+<ParamField query="page" type="integer" default="1">
+  Page number (optional, 1-indexed)
+</ParamField>
+
+### Authentication
+
+Requires a valid JWT token. The authenticated user must be either:
+- The **owner** of the favorites (user.userId === id)
+- An **admin** (can view any user's favorites)
+
+### Response
+
+<ResponseField name="data" type="array">
+  Array of full obra objects with all related data
+  <Expandable title="Obra Object">
+    <ResponseField name="id" type="integer">
+      Obra's unique identifier
+    </ResponseField>
+    <ResponseField name="municipio" type="object">
+      Municipality information
+    </ResponseField>
+    <ResponseField name="dependencia" type="object">
+      Department/dependency information
+    </ResponseField>
+    <ResponseField name="ejercicioFiscal" type="object">
+      Fiscal year information
+    </ResponseField>
+    <ResponseField name="estatusObra" type="object">
+      Obra status information
+    </ResponseField>
+    <ResponseField name="tipoProyecto" type="object">
+      Project type information
+    </ResponseField>
+    <ResponseField name="..." type="various">
+      Other obra fields as defined in the Obra entity
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Pagination metadata
+  <Expandable title="Meta Object">
+    <ResponseField name="totalItems" type="integer">
+      Total number of favorites
+    </ResponseField>
+    <ResponseField name="itemCount" type="integer">
+      Number of items in current page
+    </ResponseField>
+    <ResponseField name="itemsPerPage" type="integer">
+      Items per page (same as limit)
+    </ResponseField>
+    <ResponseField name="totalPages" type="integer">
+      Total number of pages
+    </ResponseField>
+    <ResponseField name="currentPage" type="integer">
+      Current page number
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Response
+
+```json 200 Success
+{
+  "data": [
+    {
+      "id": 1234,
+      "nombre": "Construcción de Carretera",
+      "descripcion": "Carretera de 10km",
+      "municipio": {
+        "id": 1,
+        "nombre": "Mérida"
+      },
+      "dependencia": {
+        "id": 5,
+        "nombre": "Secretaría de Obras Públicas"
+      },
+      "ejercicioFiscal": {
+        "id": 2024,
+        "anio": 2024
+      },
+      "estatusObra": {
+        "id": 2,
+        "nombre": "En progreso"
+      },
+      "tipoProyecto": {
+        "id": 3,
+        "nombre": "Infraestructura"
+      }
+    }
+  ],
+  "meta": {
+    "totalItems": 25,
+    "itemCount": 10,
+    "itemsPerPage": 10,
+    "totalPages": 3,
+    "currentPage": 1
+  }
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "No tienes permiso para ver los favoritos de otro usuario."
+}
+```
+
+```json 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Usuario no encontrado"
+}
+```
+
+### Authorization Rules
+
+- **Admin users**: Can view any user's favorites
+- **Regular users**: Can only view their own favorites (user.userId === id)
+- **Mismatch**: If a regular user tries to view another user's favorites, returns 403 Forbidden
+
+See implementation in `/home/daytona/workspace/source/src/users/users.controller.ts:109`
+
+### Related Data
+
+The response includes full obra objects with the following TypeORM relations loaded:
+- `obra.municipio` - Municipality where the obra is located
+- `obra.dependencia` - Government department managing the obra
+- `obra.ejercicioFiscal` - Fiscal year of the obra
+- `obra.estatusObra` - Current status of the obra
+- `obra.tipoProyecto` - Type/category of the project
+
+Favorites are ordered by `createdAt` in descending order (newest first).

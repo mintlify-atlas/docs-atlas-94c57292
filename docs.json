@@ -1,122 +1,112 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Yucatan Public Works API",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#2E7D32",
+    "light": "#66BB6A",
+    "dark": "#1B5E20"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/LizandroCanul/back_sdo"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/LizandroCanul/back_sdo"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Authentication",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "authentication/overview",
+              "authentication/jwt-tokens",
+              "authentication/roles"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "concepts/database-schema",
+              "concepts/validation",
+              "concepts/error-handling"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Authentication",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/auth/login"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Public Works",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/obras/list-obras",
+              "api-reference/obras/get-obra",
+              "api-reference/obras/create-obra",
+              "api-reference/obras/update-obra",
+              "api-reference/obras/delete-obra"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api-reference/users/list-users",
+              "api-reference/users/get-user",
+              "api-reference/users/create-user",
+              "api-reference/users/update-user",
+              "api-reference/users/delete-user",
+              "api-reference/users/favorites"
+            ]
+          },
+          {
+            "group": "Municipalities",
+            "pages": [
+              "api-reference/municipios/list-municipios",
+              "api-reference/municipios/get-municipio"
+            ]
+          },
+          {
+            "group": "Dependencies",
+            "pages": [
+              "api-reference/dependencias/list-dependencias",
+              "api-reference/dependencias/get-dependencia",
+              "api-reference/dependencias/create-dependencia",
+              "api-reference/dependencias/update-dependencia",
+              "api-reference/dependencias/delete-dependencia"
+            ]
+          },
+          {
+            "group": "Catalogs",
+            "pages": [
+              "api-reference/catalogos/localidades",
+              "api-reference/catalogos/tipo-proyecto",
+              "api-reference/catalogos/estatus-obra",
+              "api-reference/catalogos/ejercicio-fiscal"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

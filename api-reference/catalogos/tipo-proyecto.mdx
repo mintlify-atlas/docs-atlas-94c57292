@@ -1,0 +1,312 @@
+---
+title: 'Tipos de Proyecto'
+description: 'Manage project type catalog data'
+---
+
+## Overview
+
+Tipos de Proyecto (project types) define the categories for public works projects such as "INFRAESTRUCTURA VIAL" (road infrastructure) or "EDUCACIÓN" (education). This catalog provides reference data for classifying projects.
+
+## Get All Project Types
+
+<api-endpoint>
+  <api-endpoint-request>
+    GET /catalogos/tipo-proyecto
+  </api-endpoint-request>
+</api-endpoint>
+
+Retrieves a list of all project types in the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Response
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the project type
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Name of the project type (max 150 characters, unique)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Status flag indicating if the project type is active (default: true)
+</ResponseField>
+
+### Example Request
+
+```bash
+curl --request GET \
+  --url http://localhost:3000/catalogos/tipo-proyecto \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "INFRAESTRUCTURA VIAL",
+    "activo": true
+  },
+  {
+    "id": 2,
+    "nombre": "EDUCACIÓN",
+    "activo": true
+  },
+  {
+    "id": 3,
+    "nombre": "SALUD",
+    "activo": true
+  },
+  {
+    "id": 4,
+    "nombre": "DEPORTES Y RECREACIÓN",
+    "activo": true
+  }
+]
+```
+
+---
+
+## Get Project Type by ID
+
+<api-endpoint>
+  <api-endpoint-request>
+    GET /catalogos/tipo-proyecto/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Retrieves a single project type by its unique identifier.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the project type to retrieve
+</ParamField>
+
+### Response
+
+Returns a single project type object with the following fields:
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the project type
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Name of the project type
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Status flag indicating if the project type is active
+</ResponseField>
+
+### Example Request
+
+```bash
+curl --request GET \
+  --url http://localhost:3000/catalogos/tipo-proyecto/1 \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+{
+  "id": 1,
+  "nombre": "INFRAESTRUCTURA VIAL",
+  "activo": true
+}
+```
+
+### Error Responses
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (404 if project type not found)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+```json
+{
+  "statusCode": 404,
+  "message": "Project type not found"
+}
+```
+
+---
+
+## Create Project Type
+
+<api-endpoint>
+  <api-endpoint-request>
+    POST /catalogos/tipo-proyecto
+  </api-endpoint-request>
+</api-endpoint>
+
+Creates a new project type in the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Request Body
+
+<ParamField body="nombre" type="string" required>
+  Name of the project type (max 150 characters, must be unique)
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Status flag (defaults to true if not provided)
+</ParamField>
+
+### Validation Rules
+
+<Info>
+  - **nombre** is required and must be a non-empty string
+  - **nombre** must be unique across all project types
+  - **activo** is optional and defaults to true
+</Info>
+
+### Example Request
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/catalogos/tipo-proyecto \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "nombre": "INFRAESTRUCTURA HIDRÁULICA",
+    "activo": true
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": 5,
+  "nombre": "INFRAESTRUCTURA HIDRÁULICA",
+  "activo": true
+}
+```
+
+### Error Response
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "nombre should not be empty",
+    "nombre must be a string"
+  ],
+  "error": "Bad Request"
+}
+```
+
+---
+
+## Update Project Type
+
+<api-endpoint>
+  <api-endpoint-request>
+    PATCH /catalogos/tipo-proyecto/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Updates an existing project type.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the project type to update
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="nombre" type="string">
+  Name of the project type (must be unique if provided)
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Status flag
+</ParamField>
+
+### Example Request
+
+```bash
+curl --request PATCH \
+  --url http://localhost:3000/catalogos/tipo-proyecto/5 \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "activo": false
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": 5,
+  "nombre": "INFRAESTRUCTURA HIDRÁULICA",
+  "activo": false
+}
+```
+
+---
+
+## Delete Project Type
+
+<api-endpoint>
+  <api-endpoint-request>
+    DELETE /catalogos/tipo-proyecto/{id}
+  </api-endpoint-request>
+</api-endpoint>
+
+Deletes a project type from the system.
+
+### Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the project type to delete
+</ParamField>
+
+<Info>
+  Deleting a project type that is referenced by existing projects may fail due to foreign key constraints. Consider setting **activo** to false instead.
+</Info>
+
+### Example Request
+
+```bash
+curl --request DELETE \
+  --url http://localhost:3000/catalogos/tipo-proyecto/5 \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+### Example Response
+
+```json
+{
+  "message": "Project type deleted successfully"
+}
+```

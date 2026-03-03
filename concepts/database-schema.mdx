@@ -1,0 +1,378 @@
+---
+title: 'Database Schema'
+description: 'Understanding the database structure and entity relationships in the Yucatan Public Works API'
+icon: 'database'
+---
+
+## Overview
+
+The Yucatan Public Works API uses **TypeORM** as its ORM layer with **PostgreSQL** as the database backend. Geographic data is handled using **PostGIS** extensions for spatial operations.
+
+## Key Entities
+
+### Obra (Public Work)
+
+The central entity representing a public works project.
+
+<CodeGroup>
+```typescript obra.entity.ts
+@Entity('obras')
+export class Obra {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ name: 'numero_obra', type: 'int' })
+  numeroObra: number; // Auto-calculated annual consecutive number
+
+  @Column({ name: 'clave_unica', length: 50, unique: true })
+  claveUnica: string; // Unique identifier
+
+  @Column({ length: 255 })
+  nombre: string;
+
+  @Column({ type: 'text', nullable: true })
+  descripcion: string;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  monto: number; // Budget amount
+
+  // Foreign key relationships
+  @ManyToOne(() => EjercicioFiscal, { nullable: false, eager: true })
+  ejercicioFiscal: EjercicioFiscal;
+
+  @ManyToOne(() => Dependencia, { nullable: false, eager: true })
+  dependencia: Dependencia;
+
+  @ManyToOne(() => Municipio, { nullable: false, eager: true })
+  municipio: Municipio;
+
+  @ManyToOne(() => TipoProyecto, { nullable: true, eager: true })
+  tipoProyecto: TipoProyecto;
+
+  @ManyToOne(() => EstatusObra, { nullable: false, eager: true })
+  estatusObra: EstatusObra;
+
+  // Child relationships
+  @OneToMany(() => ObraUbicacion, (ubicacion) => ubicacion.obra, {
+    cascade: true
+  })
+  ubicaciones: ObraUbicacion[];
+}
+```
+</CodeGroup>
+
+**Key Fields:**
+- `numeroObra`: Auto-generated annual consecutive number
+- `claveUnica`: Unique project identifier (max 50 chars)
+- `monto`: Budget with 2 decimal precision (up to 18 digits)
+- Uses `eager: true` for automatic relation loading
+
+### ObraUbicacion (Location)
+
+Handles geographic data for public works using PostGIS.
+
+<CodeGroup>
+```typescript obra-ubicacion.entity.ts
+export enum TipoGeometria {
+  PUNTO = 'PUNTO',
+  RUTA = 'RUTA',
+  POLIGONO = 'POLIGONO',
+}
+
+@Entity('obra_ubicaciones')
+export class ObraUbicacion {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @ManyToOne(() => Municipio, { nullable: false })
+  municipio: Municipio;
+
+  @Column({ length: 255 })
+  direccion: string;
+
+  @Column({ name: 'localidad_referencia', length: 150, nullable: true })
+  localidadReferencia: string;
+
+  @Column({ name: 'referencia_lugar', length: 150, nullable: true })
+  referenciaLugar: string;
+
+  @Column({ type: 'enum', enum: TipoGeometria, default: TipoGeometria.PUNTO })
+  tipoGeometria: TipoGeometria;
+
+  @Column({ name: 'geometria_json', type: 'json' })
+  geometriaJson: any; // GeoJSON data
+
+  @Column({ default: 0 })
+  orden: number;
+
+  @ManyToOne(() => Obra, (obra) => obra.ubicaciones, { onDelete: 'CASCADE' })
+  obra: Obra;
+}
+```
+</CodeGroup>
+
+<Note>
+  Each location can be a PUNTO (point), RUTA (line), or POLIGONO (polygon). Geographic data is stored as JSON for flexibility.
+</Note>
+
+### User
+
+User authentication and authorization entity.
+
+<CodeGroup>
+```typescript user.entity.ts
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string; // UUID for security
+
+  @Column('text')
+  nombreCompleto: string;
+
+  @Column('text', { unique: true })
+  email: string;
+
+  @Column('text', { select: false })
+  password: string; // Never returned in queries
+
+  @Column('text', { default: 'user' })
+  roles: string; // 'admin' | 'user'
+
+  @Column('bool', { default: true })
+  isActive: boolean;
+
+  @Column('bool', { default: true })
+  mustChangePassword: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @OneToMany(() => UserFavoriteObra, (fav) => fav.user, { cascade: true })
+  favoritasObras: UserFavoriteObra[];
+}
+```
+</CodeGroup>
+
+<Warning>
+  The `password` field uses `select: false` to prevent accidental exposure. You must explicitly select it when needed.
+</Warning>
+
+### Municipio (Municipality)
+
+Municipality entity with PostGIS spatial indexing.
+
+<CodeGroup>
+```typescript municipio.entity.ts
+import type { Point } from 'geojson';
+
+@Entity('municipios')
+export class Municipio {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'text', unique: true })
+  nombre: string;
+
+  // PostGIS geometry column
+  @Index({ spatial: true })
+  @Column({
+    type: 'geometry',
+    spatialFeatureType: 'Point',
+    srid: 4326, // WGS84 coordinate system
+    nullable: true,
+  })
+  ubicacion: Point;
+
+  @Column({ type: 'boolean', default: true })
+  activo: boolean; // Soft delete
+
+  @CreateDateColumn({ select: false })
+  created_at: Date;
+
+  @UpdateDateColumn({ select: false })
+  updated_at: Date;
+}
+```
+</CodeGroup>
+
+**PostGIS Integration:**
+- Uses `geometry` type with spatial indexing
+- `srid: 4326` = WGS84 (standard GPS coordinates)
+- Supports spatial queries and distance calculations
+
+### Catalog Entities
+
+Simple catalog tables for dropdowns and classifications.
+
+<CodeGroup>
+```typescript Dependencia
+@Entity('dependencias')
+export class Dependencia {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'text', unique: true })
+  nombre: string;
+
+  @Column({ type: 'text', nullable: true })
+  siglas: string;
+
+  @Column({ type: 'boolean', default: true })
+  activo: boolean;
+}
+```
+
+```typescript EjercicioFiscal
+@Entity('ejercicios_fiscales')
+export class EjercicioFiscal {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ type: 'int', unique: true })
+  anio: number; // e.g., 2025
+
+  @Column({ default: true })
+  activo: boolean;
+}
+```
+
+```typescript TipoProyecto
+@Entity('tipos_proyecto')
+export class TipoProyecto {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ type: 'varchar', length: 150, unique: true })
+  nombre: string; // e.g., "INFRAESTRUCTURA VIAL"
+
+  @Column({ default: true })
+  activo: boolean;
+}
+```
+
+```typescript EstatusObra
+@Entity('estatus_obra')
+export class EstatusObra {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ type: 'varchar', length: 50, unique: true })
+  nombre: string; // e.g., "PROGRAMADA", "EN PROCESO"
+
+  @Column({ default: true })
+  activo: boolean;
+}
+```
+</CodeGroup>
+
+## Entity Relationships
+
+<Steps>
+  <Step title="Obra → Municipio">
+    Many obras belong to one municipio (nullable: false, eager: true)
+  </Step>
+  <Step title="Obra → Dependencia">
+    Many obras belong to one dependencia (nullable: false, eager: true)
+  </Step>
+  <Step title="Obra → EjercicioFiscal">
+    Many obras belong to one fiscal year (nullable: false, eager: true)
+  </Step>
+  <Step title="Obra → TipoProyecto">
+    Many obras can have one project type (nullable: true, eager: true)
+  </Step>
+  <Step title="Obra → EstatusObra">
+    Many obras have one status (nullable: false, eager: true)
+  </Step>
+  <Step title="Obra ↔ ObraUbicacion">
+    One obra has many ubicaciones (cascade: true, onDelete: CASCADE)
+  </Step>
+  <Step title="User ↔ Obra (Favorites)">
+    Many-to-many through UserFavoriteObra junction table
+  </Step>
+</Steps>
+
+### UserFavoriteObra Junction Table
+
+<CodeGroup>
+```typescript user-favorite-obra.entity.ts
+@Entity('user_favorite_obra')
+@Unique(['user', 'obra']) // Prevents duplicate favorites
+export class UserFavoriteObra {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @ManyToOne(() => User, (user) => user.favoritasObras, { onDelete: 'CASCADE' })
+  user: User;
+
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string;
+
+  @ManyToOne(() => Obra, (obra) => obra.usuariosQueLoMarcanFavorita, { onDelete: 'CASCADE' })
+  obra: Obra;
+
+  @Column({ name: 'obra_id' })
+  obraId: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+```
+</CodeGroup>
+
+## Foreign Key Conventions
+
+The project follows these TypeORM patterns:
+
+<CardGroup cols={2}>
+  <Card title="Relation Column" icon="link">
+    Stores the full related entity
+    ```typescript
+    @ManyToOne(() => Municipio)
+    municipio: Municipio;
+    ```
+  </Card>
+  <Card title="ID Column" icon="hashtag">
+    Stores just the foreign key ID
+    ```typescript
+    @Column({ name: 'municipio_id' })
+    municipioId: number;
+    ```
+  </Card>
+  <Card title="Eager Loading" icon="bolt">
+    Automatically loads relations
+    ```typescript
+    @ManyToOne(() => Municipio, { eager: true })
+    ```
+  </Card>
+  <Card title="Cascade Operations" icon="arrow-down">
+    Auto-saves/deletes children
+    ```typescript
+    @OneToMany(..., { cascade: true })
+    ```
+  </Card>
+</CardGroup>
+
+## Soft Deletes
+
+Catalog entities use the `activo` boolean field for soft deletion:
+
+```typescript
+@Column({ type: 'boolean', default: true })
+activo: boolean;
+```
+
+This preserves historical data while hiding inactive records from normal queries.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Validation" icon="check" href="/concepts/validation">
+    Learn about DTO validation patterns
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/concepts/error-handling">
+    Understand error responses
+  </Card>
+</CardGroup>

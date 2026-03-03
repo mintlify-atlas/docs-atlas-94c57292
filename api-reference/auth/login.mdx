@@ -1,0 +1,180 @@
+---
+title: 'Login'
+api: 'POST /auth/login'
+description: 'Authenticate a user and receive a JWT access token'
+---
+
+## Description
+
+Authenticates a user with their email and password. On successful authentication, returns a JWT access token and user information. The token should be included in the Authorization header for subsequent API requests.
+
+## Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password
+</ParamField>
+
+## Response
+
+<ResponseField name="access_token" type="string">
+  JWT access token for authentication. Include this token in the Authorization header as `Bearer {token}` for subsequent requests.
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  User information object
+  
+  <Expandable title="User object properties">
+    <ResponseField name="id" type="string">
+      Unique user identifier (UUID)
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      User's email address
+    </ResponseField>
+    
+    <ResponseField name="roles" type="string">
+      User role. Possible values: `admin` or `user`
+    </ResponseField>
+    
+    <ResponseField name="mustChangePassword" type="boolean">
+      Indicates whether the user must change their password on next login
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Examples
+
+<ResponseExample>
+```json 200 - Success
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzhmMWI0Zi0yZTNhLTRhOWItOGY2ZC0xYzJkM2U0ZjVhNmIiLCJlbWFpbCI6Imp1YW4ucGVyZXpAeXVjYXRhbi5nb2IubXgiLCJyb2xlcyI6ImFkbWluIiwiaWF0IjoxNzA5NTY3ODkwLCJleHAiOjE3MDk2NTQyOTB9.xK8pL9mN2qR3sT5vW7xY9zA1bC3dE4fG5hI6jK7lM8n",
+  "user": {
+    "id": "7c8f1b4f-2e3a-4a9b-8f6d-1c2d3e4f5a6b",
+    "email": "juan.perez@yucatan.gob.mx",
+    "roles": "admin",
+    "mustChangePassword": false
+  }
+}
+```
+
+```json 401 - Unauthorized
+{
+  "statusCode": 401,
+  "message": "Credenciales inválidas",
+  "error": "Unauthorized"
+}
+```
+</ResponseExample>
+
+## Code Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.yucatan.gob.mx/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "juan.perez@yucatan.gob.mx",
+    "password": "SecurePassword123!"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.yucatan.gob.mx/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'juan.perez@yucatan.gob.mx',
+    password: 'SecurePassword123!'
+  })
+});
+
+const { access_token, user } = await response.json();
+
+// Use the token in subsequent requests
+const obras = await fetch('https://api.yucatan.gob.mx/obras', {
+  headers: {
+    'Authorization': `Bearer ${access_token}`
+  }
+});
+```
+
+```python Python
+import requests
+
+# Login
+response = requests.post(
+    'https://api.yucatan.gob.mx/auth/login',
+    json={
+        'email': 'juan.perez@yucatan.gob.mx',
+        'password': 'SecurePassword123!'
+    }
+)
+
+data = response.json()
+access_token = data['access_token']
+
+# Use the token in subsequent requests
+obras = requests.get(
+    'https://api.yucatan.gob.mx/obras',
+    headers={'Authorization': f'Bearer {access_token}'}
+)
+```
+
+```php PHP
+<?php
+// Login
+$ch = curl_init('https://api.yucatan.gob.mx/auth/login');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    'email' => 'juan.perez@yucatan.gob.mx',
+    'password' => 'SecurePassword123!'
+]));
+
+$response = curl_exec($ch);
+$data = json_decode($response, true);
+$access_token = $data['access_token'];
+
+// Use the token in subsequent requests
+$ch = curl_init('https://api.yucatan.gob.mx/obras');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Bearer ' . $access_token
+]);
+$obras = curl_exec($ch);
+?>
+```
+</CodeGroup>
+
+## Authentication Flow
+
+1. Send a POST request to `/auth/login` with valid email and password
+2. Receive the JWT `access_token` in the response
+3. Store the token securely (e.g., in localStorage, sessionStorage, or secure cookie)
+4. Include the token in the `Authorization` header for all subsequent API requests:
+   ```
+   Authorization: Bearer {access_token}
+   ```
+5. The token contains the user's ID, email, and roles encoded in the JWT payload
+
+## Error Handling
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Authentication successful |
+| 401 | Invalid credentials (wrong email or password) |
+| 400 | Bad request (missing email or password) |
+
+## Security Notes
+
+- Passwords are hashed using bcrypt before storage
+- The JWT token includes user ID (`sub`), email, and roles in the payload
+- Tokens should be transmitted only over HTTPS in production
+- Store tokens securely and never expose them in URLs or logs

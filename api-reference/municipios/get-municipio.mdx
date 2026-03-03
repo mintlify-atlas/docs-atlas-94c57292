@@ -1,0 +1,210 @@
+---
+title: 'Get Municipality'
+description: 'Retrieve a specific municipality by ID'
+api: 'GET /municipios/:id'
+---
+
+## Overview
+
+Retrieves detailed information for a specific municipality in Yucatan state using its unique identifier.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+```bash
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+## Request
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  Unique identifier of the municipality
+  
+  Must be a valid integer between 1 and 106
+  
+  Example: `51` for Mérida
+</ParamField>
+
+### Base URL
+
+```
+https://api.example.com/municipios/:id
+```
+
+## Response
+
+Returns a single municipality object with geographic coordinates.
+
+<ResponseField name="id" type="number">
+  Unique identifier for the municipality
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Official name of the municipality
+  
+  Example: `Mérida`, `Valladolid`, `Tizimín`
+</ResponseField>
+
+<ResponseField name="ubicacion" type="Point">
+  Geographic coordinates in GeoJSON Point format (SRID 4326 / WGS 84)
+  
+  <Expandable title="Point Structure">
+    <ResponseField name="type" type="string">
+      Always `"Point"` for municipality locations
+    </ResponseField>
+    
+    <ResponseField name="coordinates" type="array">
+      Array with `[longitude, latitude]` in decimal degrees
+      
+      Example: `[-89.5926, 20.9674]` for Mérida
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="activo" type="boolean">
+  Indicates if the municipality is active in the system
+  
+  Default: `true`
+</ResponseField>
+
+### Success Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "id": 51,
+  "nombre": "Mérida",
+  "ubicacion": {
+    "type": "Point",
+    "coordinates": [-89.5926, 20.9674]
+  },
+  "activo": true
+}
+```
+
+```json 404 - Not Found
+{
+  "statusCode": 404,
+  "message": "Municipality not found",
+  "error": "Not Found"
+}
+```
+
+```json 400 - Bad Request
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Invalid or missing authentication token"
+}
+```
+</CodeGroup>
+
+## Example Requests
+
+<CodeGroup>
+```bash cURL - Mérida
+curl -X GET https://api.example.com/municipios/51 \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+```bash cURL - Valladolid
+curl -X GET https://api.example.com/municipios/103 \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const municipioId = 51; // Mérida
+
+const response = await fetch(`https://api.example.com/municipios/${municipioId}`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+
+if (response.ok) {
+  const municipio = await response.json();
+  console.log(`${municipio.nombre}: ${municipio.ubicacion.coordinates}`);
+} else {
+  console.error('Municipality not found');
+}
+```
+
+```python Python
+import requests
+
+municipioId = 51  # Mérida
+
+headers = {
+    'Authorization': 'Bearer YOUR_API_TOKEN',
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    f'https://api.example.com/municipios/{municipioId}',
+    headers=headers
+)
+
+if response.status_code == 200:
+    municipio = response.json()
+    print(f"{municipio['nombre']}: {municipio['ubicacion']['coordinates']}")
+else:
+    print(f"Error: {response.status_code}")
+```
+</CodeGroup>
+
+<Info>
+  **Common Municipality IDs**
+  
+  - Mérida (capital): `51`
+  - Valladolid: `103`
+  - Tizimín: `97`
+  - Progreso: `60`
+  - Ticul: `90`
+</Info>
+
+## Error Handling
+
+### Invalid ID Format
+
+The endpoint uses `ParseIntPipe` validation, so non-numeric IDs will return a 400 error:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+### Municipality Not Found
+
+If the ID doesn't exist in the database, the endpoint returns `null`. Handle this in your application:
+
+```javascript
+if (municipio === null) {
+  console.log('Municipality not found');
+}
+```
+
+## Notes
+
+- The endpoint returns `null` if no municipality is found with the given ID
+- Only IDs between 1 and 106 are valid (corresponding to Yucatan's 106 municipalities)
+- Geographic coordinates represent the central point of each municipality
+- This is a read-only endpoint; municipalities cannot be modified via the API
+- Inactive municipalities may still be retrieved if you have their ID

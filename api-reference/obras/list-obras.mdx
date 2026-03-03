@@ -1,0 +1,275 @@
+---
+title: 'List Public Works'
+api: 'GET /obras'
+---
+
+Retrieves a paginated list of public works (obras) with optional filtering and search capabilities.
+
+## Authentication
+
+<Note>
+  This endpoint requires a valid JWT token. Both **admin** and **user** roles can access this endpoint.
+</Note>
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+  
+  ```
+  Authorization: Bearer YOUR_JWT_TOKEN
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="limit" type="number" default="10">
+  Number of obras to return per page. Minimum value: 1.
+</ParamField>
+
+<ParamField query="page" type="number" default="1">
+  Page number to retrieve. Minimum value: 1.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search keyword to filter obras by name, description, or unique key (claveUnica). Case-insensitive partial match.
+  
+  Example: `search=Baños`
+</ParamField>
+
+<ParamField query="ejercicioFiscalId" type="number">
+  Filter obras by fiscal year ID.
+</ParamField>
+
+<ParamField query="municipioId" type="number">
+  Filter obras by municipality ID.
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of obra objects
+  
+  <ResponseField name="id" type="number">
+    Unique identifier for the obra
+  </ResponseField>
+  
+  <ResponseField name="numeroObra" type="number">
+    Sequential obra number within the fiscal year (auto-generated)
+  </ResponseField>
+  
+  <ResponseField name="claveUnica" type="string">
+    Unique key for the obra (max 50 characters)
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Name of the public work (max 255 characters)
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    Detailed description of the obra
+  </ResponseField>
+  
+  <ResponseField name="monto" type="number">
+    Budget amount (decimal with 2 decimal places)
+  </ResponseField>
+  
+  <ResponseField name="ejercicioFiscalId" type="number">
+    Fiscal year ID
+  </ResponseField>
+  
+  <ResponseField name="ejercicioFiscal" type="object">
+    Fiscal year details object
+  </ResponseField>
+  
+  <ResponseField name="dependenciaId" type="number">
+    Department/dependency ID
+  </ResponseField>
+  
+  <ResponseField name="dependencia" type="object">
+    Department details object
+  </ResponseField>
+  
+  <ResponseField name="municipioId" type="number">
+    Municipality ID
+  </ResponseField>
+  
+  <ResponseField name="municipio" type="object">
+    Municipality details object
+  </ResponseField>
+  
+  <ResponseField name="tipoProyectoId" type="number">
+    Project type ID (nullable)
+  </ResponseField>
+  
+  <ResponseField name="tipoProyecto" type="object">
+    Project type details object
+  </ResponseField>
+  
+  <ResponseField name="estatusObraId" type="number">
+    Work status ID
+  </ResponseField>
+  
+  <ResponseField name="estatusObra" type="object">
+    Work status details object
+  </ResponseField>
+  
+  <ResponseField name="ubicaciones" type="array">
+    Array of location objects associated with this obra
+    
+    <ResponseField name="id" type="number">
+      Location ID
+    </ResponseField>
+    
+    <ResponseField name="municipioId" type="number">
+      Municipality ID for this location
+    </ResponseField>
+    
+    <ResponseField name="direccion" type="string">
+      Street address
+    </ResponseField>
+    
+    <ResponseField name="localidadReferencia" type="string">
+      Locality reference (nullable)
+    </ResponseField>
+    
+    <ResponseField name="referenciaLugar" type="string">
+      Place reference (nullable)
+    </ResponseField>
+    
+    <ResponseField name="tipoGeometria" type="string">
+      Geometry type: `PUNTO`, `RUTA`, or `POLIGONO`
+    </ResponseField>
+    
+    <ResponseField name="geometriaJson" type="object">
+      GeoJSON geometry data
+    </ResponseField>
+    
+    <ResponseField name="orden" type="number">
+      Display order
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Pagination metadata
+  
+  <ResponseField name="totalItems" type="number">
+    Total number of obras in the database matching the filters
+  </ResponseField>
+  
+  <ResponseField name="itemCount" type="number">
+    Number of obras returned in this response
+  </ResponseField>
+  
+  <ResponseField name="itemsPerPage" type="number">
+    Number of items per page (same as limit parameter)
+  </ResponseField>
+  
+  <ResponseField name="totalPages" type="number">
+    Total number of pages available
+  </ResponseField>
+  
+  <ResponseField name="currentPage" type="number">
+    Current page number
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.yucatan.gob.mx/obras?limit=20&page=1&search=escuela&ejercicioFiscalId=2024" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "numeroObra": 1,
+      "claveUnica": "OBRA-2024-001",
+      "nombre": "Construcción de Escuela Primaria",
+      "descripcion": "Construcción de escuela primaria con 6 aulas",
+      "monto": 2500000.00,
+      "ejercicioFiscalId": 1,
+      "ejercicioFiscal": {
+        "id": 1,
+        "anio": 2024,
+        "nombre": "Ejercicio Fiscal 2024"
+      },
+      "dependenciaId": 1,
+      "dependencia": {
+        "id": 1,
+        "nombre": "Secretaría de Obras Públicas"
+      },
+      "municipioId": 1,
+      "municipio": {
+        "id": 1,
+        "nombre": "Mérida",
+        "codigo": "001"
+      },
+      "tipoProyectoId": 1,
+      "tipoProyecto": {
+        "id": 1,
+        "nombre": "Educación"
+      },
+      "estatusObraId": 1,
+      "estatusObra": {
+        "id": 1,
+        "nombre": "En Proceso"
+      },
+      "ubicaciones": [
+        {
+          "id": 1,
+          "municipioId": 1,
+          "direccion": "Calle 60 x 59, Col. Centro",
+          "localidadReferencia": "Centro",
+          "referenciaLugar": "Cerca del parque principal",
+          "tipoGeometria": "PUNTO",
+          "geometriaJson": {
+            "type": "Point",
+            "coordinates": [-89.6247, 20.9674]
+          },
+          "orden": 0
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "totalItems": 150,
+    "itemCount": 20,
+    "itemsPerPage": 20,
+    "totalPages": 8,
+    "currentPage": 1
+  }
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+Returned when the JWT token is missing, invalid, or expired.
+
+### 400 Bad Request
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "limit must not be less than 1",
+    "page must not be less than 1"
+  ],
+  "error": "Bad Request"
+}
+```
+
+Returned when query parameters fail validation.

@@ -1,0 +1,268 @@
+---
+title: 'Create Public Work'
+api: 'POST /obras'
+---
+
+Creates a new public work (obra) with automatic sequential numbering within the fiscal year.
+
+## Authentication & Authorization
+
+<Warning>
+  This endpoint requires **admin** role. Regular users cannot create obras.
+</Warning>
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication with admin role
+  
+  ```
+  Authorization: Bearer YOUR_JWT_TOKEN
+  ```
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+## Request Body
+
+<ParamField body="ejercicioFiscalId" type="number" required>
+  Fiscal year ID for this obra
+</ParamField>
+
+<ParamField body="claveUnica" type="string" required>
+  Unique key for the obra (max 50 characters). Must be unique across all obras.
+</ParamField>
+
+<ParamField body="nombre" type="string" required>
+  Name of the public work (max 255 characters)
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  Detailed description of the obra (optional)
+</ParamField>
+
+<ParamField body="dependenciaId" type="number" required>
+  Department/dependency ID responsible for this obra
+</ParamField>
+
+<ParamField body="monto" type="number" required>
+  Budget amount (must be positive, max 2 decimal places)
+</ParamField>
+
+<ParamField body="municipioId" type="number" required>
+  Municipality ID where the obra is located
+</ParamField>
+
+<ParamField body="tipoProyectoId" type="number">
+  Project type ID (optional)
+</ParamField>
+
+<ParamField body="estatusObraId" type="number" required>
+  Work status ID (e.g., planned, in progress, completed)
+</ParamField>
+
+<ParamField body="ubicaciones" type="array">
+  Array of location objects for this obra (optional)
+  
+  <ParamField body="municipioId" type="number" required>
+    Municipality ID for this specific location
+  </ParamField>
+  
+  <ParamField body="direccion" type="string" required>
+    Street address
+  </ParamField>
+  
+  <ParamField body="localidadReferencia" type="string">
+    Locality reference (optional)
+  </ParamField>
+  
+  <ParamField body="referenciaLugar" type="string">
+    Place reference (optional)
+  </ParamField>
+  
+  <ParamField body="tipoGeometria" type="string">
+    Geometry type: `PUNTO`, `RUTA`, or `POLIGONO` (optional, defaults to `PUNTO`)
+  </ParamField>
+  
+  <ParamField body="geometriaJson" type="object">
+    GeoJSON geometry data (optional)
+  </ParamField>
+  
+  <ParamField body="orden" type="number">
+    Display order (optional, defaults to 0)
+  </ParamField>
+</ParamField>
+
+<Note>
+  The `numeroObra` field is automatically generated based on the fiscal year and does not need to be provided.
+</Note>
+
+## Response
+
+Returns the created obra object with all related entities populated.
+
+<ResponseField name="id" type="number">
+  Unique identifier for the created obra
+</ResponseField>
+
+<ResponseField name="numeroObra" type="number">
+  Auto-generated sequential number within the fiscal year
+</ResponseField>
+
+<ResponseField name="claveUnica" type="string">
+  Unique key for the obra
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Name of the public work
+</ResponseField>
+
+<ResponseField name="descripcion" type="string">
+  Detailed description
+</ResponseField>
+
+<ResponseField name="monto" type="number">
+  Budget amount
+</ResponseField>
+
+<ResponseField name="ejercicioFiscalId" type="number">
+  Fiscal year ID
+</ResponseField>
+
+<ResponseField name="dependenciaId" type="number">
+  Department ID
+</ResponseField>
+
+<ResponseField name="municipioId" type="number">
+  Municipality ID
+</ResponseField>
+
+<ResponseField name="tipoProyectoId" type="number">
+  Project type ID
+</ResponseField>
+
+<ResponseField name="estatusObraId" type="number">
+  Work status ID
+</ResponseField>
+
+<ResponseField name="ubicaciones" type="array">
+  Array of created location objects
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST "https://api.yucatan.gob.mx/obras" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ejercicioFiscalId": 1,
+    "claveUnica": "OBRA-2024-001",
+    "nombre": "Construcción de Escuela Primaria",
+    "descripcion": "Construcción de escuela primaria con 6 aulas",
+    "dependenciaId": 1,
+    "monto": 2500000.00,
+    "municipioId": 1,
+    "tipoProyectoId": 1,
+    "estatusObraId": 1,
+    "ubicaciones": [
+      {
+        "municipioId": 1,
+        "direccion": "Calle 60 x 59, Col. Centro",
+        "localidadReferencia": "Centro",
+        "referenciaLugar": "Cerca del parque principal",
+        "tipoGeometria": "PUNTO",
+        "geometriaJson": {
+          "type": "Point",
+          "coordinates": [-89.6247, 20.9674]
+        },
+        "orden": 0
+      }
+    ]
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "numeroObra": 1,
+  "claveUnica": "OBRA-2024-001",
+  "nombre": "Construcción de Escuela Primaria",
+  "descripcion": "Construcción de escuela primaria con 6 aulas",
+  "monto": 2500000.00,
+  "ejercicioFiscalId": 1,
+  "dependenciaId": 1,
+  "municipioId": 1,
+  "tipoProyectoId": 1,
+  "estatusObraId": 1,
+  "ubicaciones": [
+    {
+      "id": 1,
+      "municipioId": 1,
+      "direccion": "Calle 60 x 59, Col. Centro",
+      "localidadReferencia": "Centro",
+      "referenciaLugar": "Cerca del parque principal",
+      "tipoGeometria": "PUNTO",
+      "geometriaJson": {
+        "type": "Point",
+        "coordinates": [-89.6247, 20.9674]
+      },
+      "orden": 0
+    }
+  ]
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+Returned when the JWT token is missing, invalid, or expired.
+
+### 403 Forbidden
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+Returned when the authenticated user does not have admin role.
+
+### 400 Bad Request
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "ejercicioFiscalId must be a number",
+    "claveUnica should not be empty",
+    "nombre should not be empty",
+    "monto must be a positive number"
+  ],
+  "error": "Bad Request"
+}
+```
+
+Returned when request body validation fails.
+
+### 409 Conflict
+```json
+{
+  "statusCode": 409,
+  "message": "La Clave Única 'OBRA-2024-001' ya existe.",
+  "error": "Conflict"
+}
+```
+
+Returned when the `claveUnica` already exists in the database.

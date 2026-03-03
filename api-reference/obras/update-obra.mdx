@@ -1,0 +1,296 @@
+---
+title: 'Update Public Work'
+api: 'PATCH /obras/:id'
+---
+
+Updates an existing public work (obra). All fields are optional - only provided fields will be updated.
+
+## Authentication & Authorization
+
+<Warning>
+  This endpoint requires **admin** role. Regular users cannot update obras.
+</Warning>
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication with admin role
+  
+  ```
+  Authorization: Bearer YOUR_JWT_TOKEN
+  ```
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the obra to update
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only include the fields you want to update.
+
+<ParamField body="ejercicioFiscalId" type="number">
+  Fiscal year ID for this obra
+</ParamField>
+
+<ParamField body="claveUnica" type="string">
+  Unique key for the obra (max 50 characters). Must be unique across all obras.
+</ParamField>
+
+<ParamField body="nombre" type="string">
+  Name of the public work (max 255 characters)
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  Detailed description of the obra
+</ParamField>
+
+<ParamField body="dependenciaId" type="number">
+  Department/dependency ID responsible for this obra
+</ParamField>
+
+<ParamField body="monto" type="number">
+  Budget amount (must be positive, max 2 decimal places)
+</ParamField>
+
+<ParamField body="municipioId" type="number">
+  Municipality ID where the obra is located
+</ParamField>
+
+<ParamField body="tipoProyectoId" type="number">
+  Project type ID
+</ParamField>
+
+<ParamField body="estatusObraId" type="number">
+  Work status ID (e.g., planned, in progress, completed)
+</ParamField>
+
+<ParamField body="ubicaciones" type="array">
+  Array of location objects. This will replace existing locations.
+  
+  <ParamField body="id" type="number">
+    Location ID (include for existing locations to update, omit for new locations)
+  </ParamField>
+  
+  <ParamField body="municipioId" type="number" required>
+    Municipality ID for this specific location
+  </ParamField>
+  
+  <ParamField body="direccion" type="string" required>
+    Street address
+  </ParamField>
+  
+  <ParamField body="localidadReferencia" type="string">
+    Locality reference
+  </ParamField>
+  
+  <ParamField body="referenciaLugar" type="string">
+    Place reference
+  </ParamField>
+  
+  <ParamField body="tipoGeometria" type="string">
+    Geometry type: `PUNTO`, `RUTA`, or `POLIGONO`
+  </ParamField>
+  
+  <ParamField body="geometriaJson" type="object">
+    GeoJSON geometry data
+  </ParamField>
+  
+  <ParamField body="orden" type="number">
+    Display order
+  </ParamField>
+</ParamField>
+
+<Note>
+  When updating `ubicaciones`, any existing locations not included in the array will be deleted. Include the `id` field to update existing locations, or omit it to create new ones.
+</Note>
+
+<Warning>
+  The `numeroObra` field is auto-generated and cannot be modified.
+</Warning>
+
+## Response
+
+Returns the updated obra object with all related entities populated.
+
+<ResponseField name="id" type="number">
+  Unique identifier for the obra
+</ResponseField>
+
+<ResponseField name="numeroObra" type="number">
+  Sequential number within the fiscal year (unchanged)
+</ResponseField>
+
+<ResponseField name="claveUnica" type="string">
+  Unique key for the obra
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Name of the public work
+</ResponseField>
+
+<ResponseField name="descripcion" type="string">
+  Detailed description
+</ResponseField>
+
+<ResponseField name="monto" type="number">
+  Budget amount
+</ResponseField>
+
+<ResponseField name="ejercicioFiscalId" type="number">
+  Fiscal year ID
+</ResponseField>
+
+<ResponseField name="dependenciaId" type="number">
+  Department ID
+</ResponseField>
+
+<ResponseField name="municipioId" type="number">
+  Municipality ID
+</ResponseField>
+
+<ResponseField name="tipoProyectoId" type="number">
+  Project type ID
+</ResponseField>
+
+<ResponseField name="estatusObraId" type="number">
+  Work status ID
+</ResponseField>
+
+<ResponseField name="ubicaciones" type="array">
+  Array of location objects
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X PATCH "https://api.yucatan.gob.mx/obras/1" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Construcción de Escuela Primaria (Actualizado)",
+    "monto": 2800000.00,
+    "estatusObraId": 2,
+    "descripcion": "Construcción de escuela primaria con 6 aulas, áreas verdes y cancha deportiva"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "numeroObra": 1,
+  "claveUnica": "OBRA-2024-001",
+  "nombre": "Construcción de Escuela Primaria (Actualizado)",
+  "descripcion": "Construcción de escuela primaria con 6 aulas, áreas verdes y cancha deportiva",
+  "monto": 2800000.00,
+  "ejercicioFiscalId": 1,
+  "dependenciaId": 1,
+  "municipioId": 1,
+  "tipoProyectoId": 1,
+  "estatusObraId": 2,
+  "ubicaciones": [
+    {
+      "id": 1,
+      "municipioId": 1,
+      "direccion": "Calle 60 x 59, Col. Centro",
+      "localidadReferencia": "Centro",
+      "referenciaLugar": "Cerca del parque principal",
+      "tipoGeometria": "PUNTO",
+      "geometriaJson": {
+        "type": "Point",
+        "coordinates": [-89.6247, 20.9674]
+      },
+      "orden": 0
+    }
+  ]
+}
+```
+
+## Example: Updating Locations
+
+```bash
+curl -X PATCH "https://api.yucatan.gob.mx/obras/1" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ubicaciones": [
+      {
+        "id": 1,
+        "municipioId": 1,
+        "direccion": "Calle 60 x 61, Col. Centro",
+        "localidadReferencia": "Centro",
+        "tipoGeometria": "PUNTO",
+        "geometriaJson": {
+          "type": "Point",
+          "coordinates": [-89.6248, 20.9675]
+        },
+        "orden": 0
+      },
+      {
+        "municipioId": 1,
+        "direccion": "Calle 62 x 63, Col. Centro",
+        "tipoGeometria": "PUNTO",
+        "geometriaJson": {
+          "type": "Point",
+          "coordinates": [-89.6250, 20.9676]
+        },
+        "orden": 1
+      }
+    ]
+  }'
+```
+
+## Error Responses
+
+### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+Returned when the JWT token is missing, invalid, or expired.
+
+### 403 Forbidden
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+Returned when the authenticated user does not have admin role.
+
+### 404 Not Found
+```json
+{
+  "statusCode": 404,
+  "message": "Obra 999 no encontrada.",
+  "error": "Not Found"
+}
+```
+
+Returned when the obra with the specified ID does not exist.
+
+### 400 Bad Request
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "monto must be a positive number"
+  ],
+  "error": "Bad Request"
+}
+```
+
+Returned when request body validation fails.

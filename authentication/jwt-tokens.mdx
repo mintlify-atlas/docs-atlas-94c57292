@@ -1,0 +1,265 @@
+---
+title: "JWT Tokens"
+description: "Learn how to obtain and use JWT tokens for API authentication"
+---
+
+## Overview
+
+JSON Web Tokens (JWT) are the primary authentication mechanism for the Yucatan Public Works API. After successful login, you'll receive a JWT token that must be included in all subsequent API requests.
+
+## Obtaining a Token
+
+To obtain a JWT token, send a POST request to the `/auth/login` endpoint with your credentials.
+
+### Endpoint
+
+```
+POST /auth/login
+```
+
+### Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@yucatan.gob.mx",
+    "password": "admin123"
+  }'
+```
+
+```javascript JavaScript (Fetch)
+const response = await fetch('http://localhost:3000/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'admin@yucatan.gob.mx',
+    password: 'admin123'
+  })
+});
+
+const data = await response.json();
+console.log(data.access_token);
+```
+
+```python Python (Requests)
+import requests
+
+url = 'http://localhost:3000/auth/login'
+payload = {
+    'email': 'admin@yucatan.gob.mx',
+    'password': 'admin123'
+}
+
+response = requests.post(url, json=payload)
+data = response.json()
+print(data['access_token'])
+```
+
+</CodeGroup>
+
+### Success Response
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzNhNjg5MS0xMjM0LTU2NzgtOWFiYy1kZWYwMTIzNDU2NzgiLCJlbWFpbCI6ImFkbWluQHl1Y2F0YW4uZ29iLm14Iiwicm9sZXMiOiJhZG1pbiIsImlhdCI6MTYxNjIzOTAyMn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+  "user": {
+    "id": "7c3a6891-1234-5678-9abc-def012345678",
+    "email": "admin@yucatan.gob.mx",
+    "roles": "admin",
+    "mustChangePassword": false
+  }
+}
+```
+
+### Error Response
+
+If the credentials are invalid, you'll receive a 401 Unauthorized response:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Credenciales inválidas",
+  "error": "Unauthorized"
+}
+```
+
+## Token Structure
+
+JWT tokens consist of three parts separated by dots (.):
+
+```
+header.payload.signature
+```
+
+### Token Payload
+
+The token payload contains the following claims:
+
+<ResponseField name="sub" type="string">
+  Subject - The user's unique ID (UUID)
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  The user's email address
+</ResponseField>
+
+<ResponseField name="roles" type="string">
+  The user's role (e.g., "admin" or "user")
+</ResponseField>
+
+<ResponseField name="iat" type="number">
+  Issued At - Timestamp when the token was created
+</ResponseField>
+
+### Example Decoded Payload
+
+```json
+{
+  "sub": "7c3a6891-1234-5678-9abc-def012345678",
+  "email": "admin@yucatan.gob.mx",
+  "roles": "admin",
+  "iat": 1616239022
+}
+```
+
+<Info>
+  The token payload is generated in `auth.service.ts:27-31` using the user's information.
+</Info>
+
+## Using Tokens in API Requests
+
+Once you have a token, include it in the `Authorization` header of your requests using the Bearer scheme.
+
+### Authorization Header Format
+
+```
+Authorization: Bearer <your_access_token>
+```
+
+### Example Requests
+
+<CodeGroup>
+
+```bash cURL - Get All Obras
+curl -X GET http://localhost:3000/obras \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+```bash cURL - Create Obra (Admin Only)
+curl -X POST http://localhost:3000/obras \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "titulo": "Nueva Carretera",
+    "descripcion": "Construcción de carretera en Mérida",
+    "presupuesto": 5000000,
+    "estado": "planeacion"
+  }'
+```
+
+```javascript JavaScript (Fetch)
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+const response = await fetch('http://localhost:3000/obras', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const obras = await response.json();
+```
+
+```python Python (Requests)
+import requests
+
+token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+headers = {'Authorization': f'Bearer {token}'}
+
+response = requests.get('http://localhost:3000/obras', headers=headers)
+obras = response.json()
+```
+
+</CodeGroup>
+
+## Token Validation
+
+The API validates tokens using the Passport JWT strategy. The validation process:
+
+1. **Extracts the token** from the Authorization header
+2. **Verifies the signature** using the secret key
+3. **Checks expiration** - expired tokens are rejected
+4. **Decodes the payload** and attaches user info to the request
+
+```typescript jwt.strategy.ts:15-18
+async validate(payload: any) {
+  return { userId: payload.sub, email: payload.email, roles: payload.roles };
+}
+```
+
+<Warning>
+  If the token is missing, invalid, or expired, the API will return a 401 Unauthorized response.
+</Warning>
+
+## Token Expiration
+
+The current implementation sets token expiration based on the JWT configuration. When a token expires:
+
+- The API will reject the token with a 401 Unauthorized response
+- The client must request a new token by logging in again
+
+```typescript jwt.strategy.ts:10
+ignoreExpiration: false, // Tokens must not be expired
+```
+
+<Note>
+  Currently, the API does not implement token refresh functionality. Users must log in again to obtain a new token after expiration.
+</Note>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store tokens securely">
+    - Never store tokens in localStorage (vulnerable to XSS attacks)
+    - Use httpOnly cookies or secure session storage
+    - Consider using memory storage for highly sensitive applications
+  </Accordion>
+  
+  <Accordion title="Handle token expiration gracefully">
+    - Implement automatic re-authentication when tokens expire
+    - Show user-friendly messages for expired sessions
+    - Consider implementing token refresh for better UX
+  </Accordion>
+  
+  <Accordion title="Protect your tokens">
+    - Never expose tokens in URLs or logs
+    - Use HTTPS in production to prevent token interception
+    - Implement token revocation for compromised accounts
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Authentication Overview" icon="shield" href="/authentication/overview">
+    Learn about the authentication system
+  </Card>
+  <Card title="Roles & Permissions" icon="users" href="/authentication/roles">
+    Understand role-based access control
+  </Card>
+</CardGroup>

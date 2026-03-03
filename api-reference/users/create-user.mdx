@@ -1,0 +1,148 @@
+---
+title: 'Create User'
+openapi: 'POST /users'
+---
+
+<Warning>
+  **Admin Only** - Only administrators can create new user accounts.
+</Warning>
+
+## Overview
+
+Create a new user account in the system. The password is automatically encrypted using bcrypt with 10 salt rounds. New users are created with `mustChangePassword: true` by default.
+
+## Authentication
+
+Requires a valid JWT token with **admin** role.
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Request Body
+
+<ParamField body="nombreCompleto" type="string" required>
+  User's full name. Minimum 3 characters.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be a valid email format and unique in the system.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password. Minimum 6 characters. Will be encrypted with bcrypt before storage.
+</ParamField>
+
+<ParamField body="roles" type="string" default="user">
+  User role. Must be either `admin` or `user`.
+</ParamField>
+
+<ParamField body="isActive" type="boolean" default="true">
+  Whether the user account should be active immediately.
+</ParamField>
+
+## Response
+
+Returns the created user object (password field is excluded).
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for the newly created user
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="nombreCompleto" type="string">
+  User's full name
+</ResponseField>
+
+<ResponseField name="roles" type="string">
+  Assigned role: `admin` or `user`
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean">
+  Account active status
+</ResponseField>
+
+<ResponseField name="mustChangePassword" type="boolean">
+  Always `true` for newly created users
+</ResponseField>
+
+<ResponseField name="createdAt" type="string (ISO 8601)">
+  Timestamp when the user was created
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string (ISO 8601)">
+  Timestamp when the user was last updated
+</ResponseField>
+
+## Example Request
+
+```bash cURL
+curl -X POST https://api.yucatan.gob.mx/users \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombreCompleto": "María González",
+    "email": "maria@yucatan.gob.mx",
+    "password": "SecurePass123",
+    "roles": "user"
+  }'
+```
+
+## Example Response
+
+```json 201 Created
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "email": "maria@yucatan.gob.mx",
+  "nombreCompleto": "María González",
+  "roles": "user",
+  "isActive": true,
+  "mustChangePassword": true,
+  "createdAt": "2024-03-03T15:30:00.000Z",
+  "updatedAt": "2024-03-03T15:30:00.000Z"
+}
+```
+
+```json 400 Bad Request - Duplicate Email
+{
+  "statusCode": 400,
+  "message": "El correo electrónico ya está registrado."
+}
+```
+
+```json 400 Bad Request - Validation Error
+{
+  "statusCode": 400,
+  "message": [
+    "La contraseña debe tener al menos 6 caracteres",
+    "email must be an email"
+  ],
+  "error": "Bad Request"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+## Validation Rules
+
+- **nombreCompleto**: Minimum 3 characters
+- **email**: Must be valid email format and unique in database
+- **password**: Minimum 6 characters (encrypted with bcrypt)
+- **roles**: Must be either `admin` or `user` (if provided)
+- **isActive**: Must be boolean (if provided)
+
+## Security Notes
+
+- Passwords are hashed using bcrypt with 10 salt rounds before storage
+- Password field is never returned in API responses
+- All new users are created with `mustChangePassword: true`
+- Database constraint prevents duplicate email addresses (error code 23505)

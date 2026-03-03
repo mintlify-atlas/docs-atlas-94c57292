@@ -1,0 +1,176 @@
+---
+title: 'Update User'
+openapi: 'PATCH /users/:id'
+---
+
+<Warning>
+  **Permission Required** - Only admins or the account owner can update user details.
+</Warning>
+
+## Overview
+
+Update user account information. Users can update their own profile, and admins can update any user. When the password is changed, it's automatically re-encrypted and `mustChangePassword` is set to `false`.
+
+## Authentication
+
+Requires a valid JWT token. The authenticated user must be either:
+- An **admin** (can update any user)
+- The **owner** of the account (can only update their own profile)
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string (UUID)" required>
+  The unique identifier of the user to update
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="nombreCompleto" type="string">
+  User's full name. Minimum 3 characters if provided.
+</ParamField>
+
+<ParamField body="email" type="string">
+  User's email address. Must be valid email format and unique.
+</ParamField>
+
+<ParamField body="password" type="string">
+  New password. Minimum 6 characters. Will be encrypted and sets `mustChangePassword` to `false`.
+</ParamField>
+
+<ParamField body="roles" type="string">
+  User role. Must be either `admin` or `user`.
+</ParamField>
+
+<ParamField body="isActive" type="boolean">
+  Whether the user account is active.
+</ParamField>
+
+<ParamField body="mustChangePassword" type="boolean">
+  Flag to force password change on next login.
+</ParamField>
+
+## Response
+
+Returns the updated user object (password field is excluded).
+
+<ResponseField name="id" type="string (UUID)">
+  User's unique identifier
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="nombreCompleto" type="string">
+  User's full name
+</ResponseField>
+
+<ResponseField name="roles" type="string">
+  User role: `admin` or `user`
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean">
+  Account active status
+</ResponseField>
+
+<ResponseField name="mustChangePassword" type="boolean">
+  Password change requirement flag
+</ResponseField>
+
+<ResponseField name="createdAt" type="string (ISO 8601)">
+  Timestamp when the user was created
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string (ISO 8601)">
+  Timestamp when the user was last updated
+</ResponseField>
+
+## Example Requests
+
+```bash Update Profile
+curl -X PATCH https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombreCompleto": "Juan Carlos Pérez"
+  }'
+```
+
+```bash Change Password
+curl -X PATCH https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password": "NewSecurePass123"
+  }'
+```
+
+## Example Response
+
+```json 200 Success
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "juan@yucatan.gob.mx",
+  "nombreCompleto": "Juan Carlos Pérez",
+  "roles": "user",
+  "isActive": true,
+  "mustChangePassword": false,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-03-03T16:45:00.000Z"
+}
+```
+
+```json 400 Bad Request
+{
+  "statusCode": 400,
+  "message": "Validation failed (uuid is expected)",
+  "error": "Bad Request"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "No puedes modificar los datos de otro usuario."
+}
+```
+
+```json 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Usuario 550e8400-e29b-41d4-a716-446655440000 no encontrado"
+}
+```
+
+## Authorization Rules
+
+The endpoint validates permissions as follows:
+
+1. **Admin users**: Can update any user's information
+2. **Regular users**: Can only update their own profile (user.userId === id)
+3. **Mismatch**: If a regular user tries to update another user, returns 403 Forbidden
+
+See implementation in `/home/daytona/workspace/source/src/users/users.controller.ts:58`
+
+## Special Behaviors
+
+### Password Update
+When a password is provided:
+- It's hashed using bcrypt with 10 salt rounds
+- `mustChangePassword` is automatically set to `false`
+- The password field is never returned in the response
+
+### Email Uniqueness
+If you try to update to an email that already exists, you'll receive a 400 error:
+```json
+{
+  "statusCode": 400,
+  "message": "El correo electrónico ya está registrado."
+}
+```

@@ -1,0 +1,69 @@
+---
+title: 'Get Dependency'
+description: 'Retrieve details of a specific government dependency by ID'
+---
+
+## GET /dependencias/:id
+
+Returns detailed information about a specific government dependency.
+
+### Authentication
+
+No authentication required. This is a public endpoint.
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the dependency to retrieve
+  
+  **Example:** `1`
+</ParamField>
+
+### Response
+
+Returns a single dependency object.
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the dependency
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Full name of the dependency
+</ResponseField>
+
+<ResponseField name="siglas" type="string">
+  Acronym or abbreviation for the dependency (automatically converted to uppercase)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Indicates whether the dependency is active. Defaults to `true`
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET http://localhost:3000/dependencias/1
+```
+
+### Example Responses
+
+```json 200 - Success
+{
+  "id": 1,
+  "nombre": "Secretaría de Desarrollo Urbano",
+  "siglas": "SDU",
+  "activo": true
+}
+```
+
+```json 404 - Not Found
+{
+  "statusCode": 404,
+  "message": "Dependencia #999 no encontrada",
+  "error": "Not Found"
+}
+```
+
+<Warning>
+  If the dependency ID does not exist, the API will return a 404 error with a descriptive message.
+</Warning>

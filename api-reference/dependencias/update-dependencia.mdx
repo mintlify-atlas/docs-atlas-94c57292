@@ -1,0 +1,132 @@
+---
+title: 'Update Dependency'
+description: 'Update an existing government dependency'
+---
+
+## PATCH /dependencias/:id
+
+Updates an existing government dependency. All fields are optional - only provide the fields you want to update.
+
+### Authentication
+
+No authentication required in the current implementation.
+
+<Warning>
+  This endpoint should be protected with authentication and admin authorization in production environments.
+</Warning>
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the dependency to update
+  
+  **Example:** `1`
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include the fields you want to update.
+
+<ParamField body="nombre" type="string">
+  Full name of the dependency. Leading and trailing whitespace will be automatically trimmed.
+  
+  **Example:** `"Secretaría de Desarrollo Urbano y Vivienda"`
+</ParamField>
+
+<ParamField body="siglas" type="string">
+  Acronym or abbreviation for the dependency. Will be automatically converted to uppercase and whitespace will be trimmed.
+  
+  **Example:** `"SDUV"`
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Indicates whether the dependency is active.
+  
+  **Example:** `false`
+</ParamField>
+
+### Response
+
+Returns the updated dependency object with all current values.
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the dependency
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Full name of the dependency
+</ResponseField>
+
+<ResponseField name="siglas" type="string">
+  Acronym or abbreviation for the dependency (uppercase)
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Indicates whether the dependency is active
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash Update Name and Acronym
+curl -X PATCH http://localhost:3000/dependencias/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Secretaría de Desarrollo Urbano y Vivienda",
+    "siglas": "SDUV"
+  }'
+```
+
+```bash Deactivate Dependency
+curl -X PATCH http://localhost:3000/dependencias/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activo": false
+  }'
+```
+
+```bash Update Single Field
+curl -X PATCH http://localhost:3000/dependencias/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "siglas": "SDU"
+  }'
+```
+</CodeGroup>
+
+### Example Responses
+
+```json 200 - Success
+{
+  "id": 1,
+  "nombre": "Secretaría de Desarrollo Urbano y Vivienda",
+  "siglas": "SDUV",
+  "activo": true
+}
+```
+
+```json 404 - Not Found
+{
+  "statusCode": 404,
+  "message": "Dependencia #999 no encontrada",
+  "error": "Not Found"
+}
+```
+
+```json 400 - Bad Request (Invalid Field Type)
+{
+  "statusCode": 400,
+  "message": [
+    "activo must be a boolean value"
+  ],
+  "error": "Bad Request"
+}
+```
+
+<Note>
+  The endpoint first verifies that the dependency exists before attempting to update it. If the ID is not found, a 404 error will be returned.
+</Note>
+
+<Warning>
+  If you update the `nombre` field to a value that already exists for another dependency, you'll receive a database constraint error due to the unique constraint.
+</Warning>

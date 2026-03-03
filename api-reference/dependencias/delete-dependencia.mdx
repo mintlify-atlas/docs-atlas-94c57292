@@ -1,0 +1,87 @@
+---
+title: 'Delete Dependency'
+description: 'Soft delete a government dependency by marking it as inactive'
+---
+
+## DELETE /dependencias/:id
+
+Performs a soft delete on a government dependency by setting its `activo` field to `false`. The dependency is not permanently removed from the database, allowing for data preservation and potential reactivation.
+
+### Authentication
+
+No authentication required in the current implementation.
+
+<Warning>
+  This endpoint should be protected with authentication and admin authorization in production environments.
+</Warning>
+
+### Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the dependency to delete
+  
+  **Example:** `1`
+</ParamField>
+
+### Response
+
+Returns the dependency object with `activo` set to `false`.
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the dependency
+</ResponseField>
+
+<ResponseField name="nombre" type="string" required>
+  Full name of the dependency
+</ResponseField>
+
+<ResponseField name="siglas" type="string">
+  Acronym or abbreviation for the dependency
+</ResponseField>
+
+<ResponseField name="activo" type="boolean" required>
+  Will always be `false` after a successful delete operation
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X DELETE http://localhost:3000/dependencias/1
+```
+
+### Example Responses
+
+```json 200 - Success
+{
+  "id": 1,
+  "nombre": "Secretaría de Desarrollo Urbano",
+  "siglas": "SDU",
+  "activo": false
+}
+```
+
+```json 404 - Not Found
+{
+  "statusCode": 404,
+  "message": "Dependencia #999 no encontrada",
+  "error": "Not Found"
+}
+```
+
+<Info>
+  **Soft Delete Behavior**
+  
+  This endpoint implements a soft delete pattern, which means:
+  - The dependency record is **not** permanently removed from the database
+  - The `activo` field is set to `false`
+  - The dependency will not appear in default list responses (unless `ver_todo=true` is used)
+  - The dependency can be reactivated by using the PATCH endpoint to set `activo: true`
+  - All historical data and relationships are preserved
+</Info>
+
+<Note>
+  To view inactive dependencies in list operations, use the `ver_todo=true` query parameter:
+  ```bash
+  GET /dependencias?ver_todo=true
+  ```
+</Note>

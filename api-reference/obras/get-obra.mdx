@@ -1,0 +1,227 @@
+---
+title: 'Get Public Work'
+api: 'GET /obras/:id'
+---
+
+Retrieves detailed information about a specific public work (obra) by its ID.
+
+## Authentication
+
+<Note>
+  This endpoint requires a valid JWT token. Both **admin** and **user** roles can access this endpoint.
+</Note>
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+  
+  ```
+  Authorization: Bearer YOUR_JWT_TOKEN
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the obra to retrieve
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  Unique identifier for the obra
+</ResponseField>
+
+<ResponseField name="numeroObra" type="number">
+  Sequential obra number within the fiscal year (auto-generated)
+</ResponseField>
+
+<ResponseField name="claveUnica" type="string">
+  Unique key for the obra (max 50 characters)
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Name of the public work (max 255 characters)
+</ResponseField>
+
+<ResponseField name="descripcion" type="string">
+  Detailed description of the obra
+</ResponseField>
+
+<ResponseField name="monto" type="number">
+  Budget amount (decimal with 2 decimal places)
+</ResponseField>
+
+<ResponseField name="ejercicioFiscalId" type="number">
+  Fiscal year ID
+</ResponseField>
+
+<ResponseField name="ejercicioFiscal" type="object">
+  Fiscal year details object
+</ResponseField>
+
+<ResponseField name="dependenciaId" type="number">
+  Department/dependency ID
+</ResponseField>
+
+<ResponseField name="dependencia" type="object">
+  Department details object
+</ResponseField>
+
+<ResponseField name="municipioId" type="number">
+  Municipality ID
+</ResponseField>
+
+<ResponseField name="municipio" type="object">
+  Municipality details object with name and code
+</ResponseField>
+
+<ResponseField name="tipoProyectoId" type="number">
+  Project type ID (nullable)
+</ResponseField>
+
+<ResponseField name="tipoProyecto" type="object">
+  Project type details object
+</ResponseField>
+
+<ResponseField name="estatusObraId" type="number">
+  Work status ID
+</ResponseField>
+
+<ResponseField name="estatusObra" type="object">
+  Work status details object
+</ResponseField>
+
+<ResponseField name="ubicaciones" type="array">
+  Array of location objects associated with this obra, sorted by `orden` ascending
+  
+  <ResponseField name="id" type="number">
+    Location ID
+  </ResponseField>
+  
+  <ResponseField name="municipioId" type="number">
+    Municipality ID for this location
+  </ResponseField>
+  
+  <ResponseField name="municipio" type="object">
+    Municipality details for this specific location
+  </ResponseField>
+  
+  <ResponseField name="direccion" type="string">
+    Street address
+  </ResponseField>
+  
+  <ResponseField name="localidadReferencia" type="string">
+    Locality reference (nullable)
+  </ResponseField>
+  
+  <ResponseField name="referenciaLugar" type="string">
+    Place reference (nullable)
+  </ResponseField>
+  
+  <ResponseField name="tipoGeometria" type="string">
+    Geometry type: `PUNTO`, `RUTA`, or `POLIGONO`
+  </ResponseField>
+  
+  <ResponseField name="geometriaJson" type="object">
+    GeoJSON geometry data
+  </ResponseField>
+  
+  <ResponseField name="orden" type="number">
+    Display order
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.yucatan.gob.mx/obras/1" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "numeroObra": 1,
+  "claveUnica": "OBRA-2024-001",
+  "nombre": "Construcción de Escuela Primaria",
+  "descripcion": "Construcción de escuela primaria con 6 aulas, áreas verdes y cancha deportiva",
+  "monto": 2500000.00,
+  "ejercicioFiscalId": 1,
+  "ejercicioFiscal": {
+    "id": 1,
+    "anio": 2024,
+    "nombre": "Ejercicio Fiscal 2024"
+  },
+  "dependenciaId": 1,
+  "dependencia": {
+    "id": 1,
+    "nombre": "Secretaría de Obras Públicas",
+    "siglas": "SOP"
+  },
+  "municipioId": 1,
+  "municipio": {
+    "id": 1,
+    "nombre": "Mérida",
+    "codigo": "001"
+  },
+  "tipoProyectoId": 1,
+  "tipoProyecto": {
+    "id": 1,
+    "nombre": "Educación",
+    "descripcion": "Proyectos relacionados con infraestructura educativa"
+  },
+  "estatusObraId": 1,
+  "estatusObra": {
+    "id": 1,
+    "nombre": "En Proceso",
+    "descripcion": "La obra está actualmente en construcción"
+  },
+  "ubicaciones": [
+    {
+      "id": 1,
+      "municipioId": 1,
+      "municipio": {
+        "id": 1,
+        "nombre": "Mérida",
+        "codigo": "001"
+      },
+      "direccion": "Calle 60 x 59, Col. Centro",
+      "localidadReferencia": "Centro",
+      "referenciaLugar": "Cerca del parque principal",
+      "tipoGeometria": "PUNTO",
+      "geometriaJson": {
+        "type": "Point",
+        "coordinates": [-89.6247, 20.9674]
+      },
+      "orden": 0
+    }
+  ]
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+Returned when the JWT token is missing, invalid, or expired.
+
+### 404 Not Found
+```json
+{
+  "statusCode": 404,
+  "message": "Obra 999 no encontrada.",
+  "error": "Not Found"
+}
+```
+
+Returned when the obra with the specified ID does not exist.

@@ -1,0 +1,100 @@
+---
+title: 'List All Users'
+openapi: 'GET /users'
+---
+
+<Warning>
+  **Admin Only** - This endpoint requires admin role. Regular users will receive a 403 Forbidden error.
+</Warning>
+
+## Overview
+
+Retrieve a list of all users in the system. This endpoint is restricted to administrators only and returns user information without sensitive data like passwords.
+
+## Authentication
+
+Requires a valid JWT token with **admin** role.
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Response
+
+Returns an array of user objects with the following fields:
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User's email address (unique)
+</ResponseField>
+
+<ResponseField name="nombreCompleto" type="string">
+  User's full name
+</ResponseField>
+
+<ResponseField name="roles" type="string">
+  User role: either `admin` or `user`
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean">
+  Whether the user account is active
+</ResponseField>
+
+<ResponseField name="mustChangePassword" type="boolean">
+  Flag indicating if user must change password on next login
+</ResponseField>
+
+## Example Request
+
+```bash cURL
+curl -X GET https://api.yucatan.gob.mx/users \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json 200 Success
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "admin@yucatan.gob.mx",
+    "nombreCompleto": "Juan Pérez",
+    "roles": "admin",
+    "isActive": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "email": "maria@yucatan.gob.mx",
+    "nombreCompleto": "María González",
+    "roles": "user",
+    "isActive": true,
+    "mustChangePassword": true
+  }
+]
+```
+
+```json 401 Unauthorized
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+## Authorization Rules
+
+- JWT token must be valid and not expired
+- User role must be exactly `admin`
+- Non-admin users attempting this request will receive 403 Forbidden
+- The password field is excluded from all responses for security

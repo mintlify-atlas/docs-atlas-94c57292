@@ -1,0 +1,167 @@
+---
+title: 'List Municipalities'
+description: 'Retrieve all active municipalities in Yucatan state'
+api: 'GET /municipios'
+---
+
+## Overview
+
+Retrieves the complete catalog of 106 municipalities (municipios) in the state of Yucatan, Mexico. This is a read-only catalog endpoint that returns active municipalities sorted alphabetically by name.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token.
+
+```bash
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+## Request
+
+No query parameters are required. The endpoint returns all active municipalities by default.
+
+### Base URL
+
+```
+https://api.example.com/municipios
+```
+
+## Response
+
+Returns an array of municipality objects with geographic coordinates.
+
+<ResponseField name="data" type="array">
+  Array of municipality objects
+  
+  <Expandable title="Municipio Object">
+    <ResponseField name="id" type="number">
+      Unique identifier for the municipality
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Official name of the municipality
+      
+      Example: `Mérida`, `Valladolid`, `Tizimín`
+    </ResponseField>
+    
+    <ResponseField name="ubicacion" type="Point">
+      Geographic coordinates in GeoJSON Point format (SRID 4326 / WGS 84)
+      
+      <Expandable title="Point Structure">
+        <ResponseField name="type" type="string">
+          Always `"Point"` for municipality locations
+        </ResponseField>
+        
+        <ResponseField name="coordinates" type="array">
+          Array with `[longitude, latitude]` in decimal degrees
+          
+          Example: `[-89.5926, 20.9674]` for Mérida
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="activo" type="boolean">
+      Indicates if the municipality is active in the system
+      
+      Default: `true`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Success Response
+
+<CodeGroup>
+```json 200 - Success
+[
+  {
+    "id": 1,
+    "nombre": "Abalá",
+    "ubicacion": {
+      "type": "Point",
+      "coordinates": [-89.5800, 20.6644]
+    },
+    "activo": true
+  },
+  {
+    "id": 2,
+    "nombre": "Acanceh",
+    "ubicacion": {
+      "type": "Point",
+      "coordinates": [-89.4522, 20.8125]
+    },
+    "activo": true
+  },
+  {
+    "id": 51,
+    "nombre": "Mérida",
+    "ubicacion": {
+      "type": "Point",
+      "coordinates": [-89.5926, 20.9674]
+    },
+    "activo": true
+  }
+]
+```
+
+```json 401 - Unauthorized
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Invalid or missing authentication token"
+}
+```
+</CodeGroup>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.example.com/municipios \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/municipios', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+
+const municipios = await response.json();
+console.log(`Total municipalities: ${municipios.length}`);
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': 'Bearer YOUR_API_TOKEN',
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    'https://api.example.com/municipios',
+    headers=headers
+)
+
+municipios = response.json()
+print(f'Total municipalities: {len(municipios)}')
+```
+</CodeGroup>
+
+<Info>
+  **Geographic Data Format**
+  
+  Coordinates follow the GeoJSON specification with longitude first, then latitude. All coordinates use the WGS 84 coordinate system (SRID 4326).
+</Info>
+
+## Notes
+
+- Results are sorted alphabetically by municipality name (`nombre`)
+- Only active municipalities (`activo: true`) are returned
+- The catalog contains all 106 official municipalities of Yucatan state
+- Geographic coordinates represent the central point of each municipality
+- This is a read-only endpoint; municipalities cannot be created or modified via the API

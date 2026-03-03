@@ -1,0 +1,349 @@
+---
+title: "Roles & Permissions"
+description: "Understand role-based access control in the Yucatan Public Works API"
+---
+
+## Overview
+
+The Yucatan Public Works API implements Role-Based Access Control (RBAC) to manage permissions and restrict access to certain endpoints based on user roles. This ensures that users can only perform actions appropriate to their authorization level.
+
+## Available Roles
+
+The API currently supports two user roles:
+
+<CardGroup cols={2}>
+  <Card title="Admin" icon="user-shield">
+    Full access to all API endpoints including create, read, update, and delete operations
+  </Card>
+  <Card title="User" icon="user">
+    Limited access - can view public works and manage their own profile
+  </Card>
+</CardGroup>
+
+### Admin Role
+
+**Role value:** `"admin"`
+
+Administrators have full control over the API and can:
+
+- Create, update, and delete public works (obras)
+- Create, view, update, and delete user accounts
+- Access all user profiles and data
+- Perform all operations without restrictions
+
+### User Role
+
+**Role value:** `"user"`
+
+Regular users have limited permissions and can:
+
+- View all public works (read-only access to obras)
+- View and update their own profile
+- Manage their own favorites list
+- Cannot create, update, or delete obras
+- Cannot access other users' profiles (unless viewing public data)
+
+## How Roles Are Enforced
+
+The API enforces role-based access control using three components:
+
+### 1. JWT Authentication Guard
+
+The `JwtAuthGuard` validates that the user has a valid JWT token:
+
+```typescript jwt-auth.guard.ts
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+```
+
+This guard ensures that only authenticated users can access protected endpoints.
+
+### 2. Roles Guard
+
+The `RolesGuard` checks if the authenticated user has the required role(s):
+
+```typescript roles.guard.ts:9-21
+canActivate(context: ExecutionContext): boolean {
+  const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+    context.getHandler(),
+    context.getClass(),
+  ]);
+
+  if (!requiredRoles) {
+    return true; // No specific role required
+  }
+
+  const { user } = context.switchToHttp().getRequest();
+  return requiredRoles.some((role) => user.roles?.includes(role));
+}
+```
+
+<Info>
+  If no specific role is required (no `@Roles()` decorator), any authenticated user can access the endpoint.
+</Info>
+
+### 3. Roles Decorator
+
+The `@Roles()` decorator specifies which roles are allowed to access an endpoint:
+
+```typescript roles.decorator.ts
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+```
+
+## Applying Role Protection
+
+Controllers use the guards and decorators to protect endpoints:
+
+### Controller-Level Protection
+
+Apply guards to the entire controller to protect all endpoints:
+
+```typescript obras.controller.ts:22-23
+@Controller('obras')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class ObrasController {
+  // All endpoints require authentication
+}
+```
+
+### Endpoint-Level Role Requirements
+
+Use the `@Roles()` decorator to specify which roles can access specific endpoints:
+
+```typescript obras.controller.ts:29-33
+@Post()
+@Roles('admin') // Only admin can create
+create(@Body() createObraDto: CreateObraDto) {
+  return this.obrasService.create(createObraDto);
+}
+```
+
+## Permission Matrix
+
+Here's a comprehensive overview of permissions for each role:
+
+### Public Works (Obras) Endpoints
+
+| Endpoint | Method | Admin | User | Description |
+|----------|--------|-------|------|-------------|
+| `/obras` | GET | ✅ | ✅ | View all public works |
+| `/obras/:id` | GET | ✅ | ✅ | View specific public work |
+| `/obras` | POST | ✅ | ❌ | Create new public work |
+| `/obras/:id` | PATCH | ✅ | ❌ | Update public work |
+| `/obras/:id` | DELETE | ✅ | ❌ | Delete public work |
+
+### User Management Endpoints
+
+| Endpoint | Method | Admin | User | Description |
+|----------|--------|-------|------|-------------|
+| `/users` | GET | ✅ | ❌ | View all users |
+| `/users` | POST | ✅ | ❌ | Create new user |
+| `/users/:id` | GET | ✅ | ✅* | View user profile |
+| `/users/:id` | PATCH | ✅ | ✅* | Update user profile |
+| `/users/:id` | DELETE | ✅ | ❌ | Delete user |
+| `/users/:id/favorites` | GET | ✅ | ✅* | View user's favorites |
+| `/users/:id/favorites/:obraId` | POST | ✅ | ✅* | Add favorite obra |
+| `/users/:id/favorites/:obraId` | DELETE | ✅ | ✅* | Remove favorite obra |
+
+<Note>
+  ✅* = Users can only access their own profile data, not other users' data
+</Note>
+
+## Protected Endpoint Examples
+
+### Admin-Only Endpoint
+
+Only users with the `admin` role can create public works:
+
+```typescript obras.controller.ts:28-33
+// ONLY ADMIN CAN CREATE
+@Post()
+@Roles('admin')
+create(@Body() createObraDto: CreateObraDto) {
+  return this.obrasService.create(createObraDto);
+}
+```
+
+<CodeGroup>
+
+```bash Admin Request (Success)
+curl -X POST http://localhost:3000/obras \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "titulo": "Nueva Carretera",
+    "descripcion": "Construcción en Mérida",
+    "presupuesto": 5000000,
+    "estado": "planeacion"
+  }'
+```
+
+```bash User Request (Forbidden)
+curl -X POST http://localhost:3000/obras \
+  -H "Authorization: Bearer <user_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "titulo": "Nueva Carretera",
+    "descripcion": "Construcción en Mérida",
+    "presupuesto": 5000000,
+    "estado": "planeacion"
+  }'
+
+# Response: 403 Forbidden
+```
+
+</CodeGroup>
+
+### Authenticated Users (Any Role)
+
+Endpoints without the `@Roles()` decorator allow any authenticated user:
+
+```typescript obras.controller.ts:35-40
+// ALL AUTHENTICATED USERS CAN VIEW
+@Get()
+findAll(@Query() filterDto: FilterObraDto) {
+  return this.obrasService.findAll(filterDto);
+}
+```
+
+Both admin and user roles can access this endpoint as long as they have a valid token.
+
+### Custom Access Logic
+
+Some endpoints implement custom logic to allow users to access their own data:
+
+```typescript users.controller.ts:44-55
+@Get(':id')
+findOne(
+  @Param('id', ParseUUIDPipe) id: string,
+  @GetUser() user: any
+) {
+  // Users can view their own profile, admins can view any profile
+  if (user.roles !== 'admin' && user.userId !== id) {
+    throw new ForbiddenException('No tienes permiso para ver este perfil.');
+  }
+  return this.usersService.findOne(id);
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when no valid JWT token is provided:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### 403 Forbidden
+
+Returned when the user is authenticated but doesn't have the required role:
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+Or with custom message:
+
+```json
+{
+  "statusCode": 403,
+  "message": "No tienes permiso para ver este perfil.",
+  "error": "Forbidden"
+}
+```
+
+## Implementation Details
+
+### Guard Order Matters
+
+When applying multiple guards, order is important:
+
+```typescript users.controller.ts:26
+@UseGuards(JwtAuthGuard, RolesGuard)
+```
+
+1. **JwtAuthGuard** executes first to validate the token
+2. **RolesGuard** executes second to check role permissions
+
+<Warning>
+  Always apply `JwtAuthGuard` before `RolesGuard` to ensure the user is authenticated before checking roles.
+</Warning>
+
+### Role Information in JWT
+
+Roles are embedded in the JWT token payload and validated on each request:
+
+```typescript auth.service.ts:27-31
+const payload = { 
+  sub: user.id,
+  email: user.email, 
+  roles: user.roles // Role stored in token
+};
+```
+
+The role cannot be changed without generating a new token through re-authentication.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Apply guards at the controller level">
+    Protect entire controllers by applying guards at the class level, then use `@Roles()` decorator only where needed:
+    
+    ```typescript
+    @Controller('obras')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    export class ObrasController {
+      @Post()
+      @Roles('admin')  // Specific role requirement
+      create() { }
+      
+      @Get()
+      // No @Roles() = any authenticated user
+      findAll() { }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Implement custom authorization logic when needed">
+    For complex permission scenarios (like users accessing only their own data), implement custom checks in the controller:
+    
+    ```typescript
+    if (user.roles !== 'admin' && user.userId !== id) {
+      throw new ForbiddenException('Access denied');
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use descriptive error messages">
+    Provide clear error messages to help clients understand why access was denied:
+    
+    ```typescript
+    throw new ForbiddenException('No tienes permiso para ver este perfil.');
+    ```
+  </Accordion>
+  
+  <Accordion title="Document role requirements">
+    Clearly document which roles can access each endpoint in your API documentation.
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Authentication Overview" icon="shield" href="/authentication/overview">
+    Learn about the authentication system
+  </Card>
+  <Card title="JWT Tokens" icon="key" href="/authentication/jwt-tokens">
+    How to obtain and use JWT tokens
+  </Card>
+</CardGroup>

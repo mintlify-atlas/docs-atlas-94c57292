@@ -1,0 +1,95 @@
+---
+title: 'Delete User'
+openapi: 'DELETE /users/:id'
+---
+
+<Warning>
+  **Admin Only** - Only administrators can delete user accounts. This action is permanent.
+</Warning>
+
+## Overview
+
+Permanently delete a user account from the system. This action cannot be undone. All associated data including favorite obras will be cascade deleted.
+
+## Authentication
+
+Requires a valid JWT token with **admin** role.
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string (UUID)" required>
+  The unique identifier of the user to delete
+</ParamField>
+
+## Response
+
+Returns a confirmation message upon successful deletion.
+
+<ResponseField name="message" type="string">
+  Confirmation message: "Usuario eliminado correctamente"
+</ResponseField>
+
+## Example Request
+
+```bash cURL
+curl -X DELETE https://api.yucatan.gob.mx/users/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json 200 Success
+{
+  "message": "Usuario eliminado correctamente"
+}
+```
+
+```json 400 Bad Request
+{
+  "statusCode": 400,
+  "message": "Validation failed (uuid is expected)",
+  "error": "Bad Request"
+}
+```
+
+```json 403 Forbidden
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+```json 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Usuario no encontrado"
+}
+```
+
+## Authorization Rules
+
+- JWT token must be valid and not expired
+- User role must be exactly `admin`
+- Non-admin users attempting this request will receive 403 Forbidden
+- The user must exist in the database or 404 will be returned
+
+## Important Notes
+
+<Warning>
+  **Cascade Deletion** - Deleting a user will also delete all associated records:
+  - All favorite obras (user_favorite_obra table)
+  - Any other data with CASCADE delete constraints
+</Warning>
+
+The deletion is permanent and cannot be undone. Consider deactivating users instead by setting `isActive: false` if you need to maintain data integrity.
+
+## Implementation
+
+See the delete logic in:
+- Controller: `/home/daytona/workspace/source/src/users/users.controller.ts:72`
+- Service: `/home/daytona/workspace/source/src/users/users.service.ts:85`
