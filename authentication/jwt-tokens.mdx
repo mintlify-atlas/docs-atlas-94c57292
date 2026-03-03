@@ -13,7 +13,7 @@ To obtain a JWT token, send a POST request to the `/auth/login` endpoint with yo
 
 ### Endpoint
 
-```
+```http
 POST /auth/login
 ```
 
@@ -102,7 +102,7 @@ If the credentials are invalid, you'll receive a 401 Unauthorized response:
 
 JWT tokens consist of three parts separated by dots (.):
 
-```
+```text
 header.payload.signature
 ```
 
@@ -147,7 +147,7 @@ Once you have a token, include it in the `Authorization` header of your requests
 
 ### Authorization Header Format
 
-```
+```http
 Authorization: Bearer <your_access_token>
 ```
 

@@ -51,7 +51,7 @@ The API enforces role-based access control using three components:
 
 The `JwtAuthGuard` validates that the user has a valid JWT token:
 
-```typescript jwt-auth.guard.ts
+```typescript
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {}
 ```
