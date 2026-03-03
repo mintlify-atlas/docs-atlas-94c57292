@@ -1,0 +1,136 @@
+{
+  "projectType": "api-service",
+  "projectName": "Yucatan Public Works API",
+  "projectDescription": "REST API for managing public works, municipalities, and government dependencies in Yucatan, Mexico",
+  "theme": "palm",
+  "primaryColor": "#2E7D32",
+  "lightColor": "#66BB6A",
+  "darkColor": "#1B5E20",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "authentication/overview",
+              "authentication/jwt-tokens",
+              "authentication/roles"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/database-schema",
+              "concepts/validation",
+              "concepts/error-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api-reference/auth/login"
+            ]
+          },
+          {
+            "group": "Public Works",
+            "pages": [
+              "api-reference/obras/list-obras",
+              "api-reference/obras/get-obra",
+              "api-reference/obras/create-obra",
+              "api-reference/obras/update-obra",
+              "api-reference/obras/delete-obra"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api-reference/users/list-users",
+              "api-reference/users/get-user",
+              "api-reference/users/create-user",
+              "api-reference/users/update-user",
+              "api-reference/users/delete-user",
+              "api-reference/users/favorites"
+            ]
+          },
+          {
+            "group": "Municipalities",
+            "pages": [
+              "api-reference/municipios/list-municipios",
+              "api-reference/municipios/get-municipio"
+            ]
+          },
+          {
+            "group": "Dependencies",
+            "pages": [
+              "api-reference/dependencias/list-dependencias",
+              "api-reference/dependencias/get-dependencia",
+              "api-reference/dependencias/create-dependencia",
+              "api-reference/dependencias/update-dependencia",
+              "api-reference/dependencias/delete-dependencia"
+            ]
+          },
+          {
+            "group": "Catalogs",
+            "pages": [
+              "api-reference/catalogos/localidades",
+              "api-reference/catalogos/tipo-proyecto",
+              "api-reference/catalogos/estatus-obra",
+              "api-reference/catalogos/ejercicio-fiscal"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "JWT-based authentication with role-based access control",
+    "Complete CRUD operations for public works management",
+    "Geographic data support with PostGIS integration",
+    "User favorites system for tracking works",
+    "Comprehensive filtering and pagination",
+    "Automatic obra numbering by fiscal year",
+    "TypeORM entities with PostgreSQL database"
+  ],
+  "publicApiSurface": [
+    "POST /auth/login",
+    "GET /obras",
+    "POST /obras",
+    "GET /obras/:id",
+    "PATCH /obras/:id",
+    "DELETE /obras/:id",
+    "GET /users",
+    "POST /users",
+    "GET /users/:id",
+    "PATCH /users/:id",
+    "DELETE /users/:id",
+    "POST /users/:id/favorites/:obraId",
+    "DELETE /users/:id/favorites/:obraId",
+    "GET /users/:id/favorites",
+    "GET /municipios",
+    "GET /municipios/:id",
+    "GET /dependencias",
+    "POST /dependencias",
+    "GET /dependencias/:id",
+    "PATCH /dependencias/:id",
+    "DELETE /dependencias/:id",
+    "GET /catalogos/localidad",
+    "GET /catalogos/tipo-proyecto",
+    "GET /catalogos/estatus-obra",
+    "GET /catalogos/ejercicio-fiscal"
+  ]
+}
